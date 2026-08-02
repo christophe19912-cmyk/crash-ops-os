@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import "./App.css";
 import ImportCenter from "./ImportCenter";
+import WipIntelligence from "./WipIntelligence";
 
 type Page =
   | "Dashboard"
@@ -455,6 +456,10 @@ function App() {
 
     if (activePage === "Import Center") {
       return <ImportCenter />;
+    }
+
+    if (activePage === "WIP Capacity") {
+      return <WipIntelligence />;
     }
 
 
