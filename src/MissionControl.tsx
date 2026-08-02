@@ -1,4 +1,5 @@
 import { useMemo } from "react";
+import CapacityIntegrationPanel from "./CapacityIntegrationPanel";
 import {
   evaluateAllShops,
   evaluateRepair,
@@ -267,6 +268,11 @@ function MissionControl() {
           <p>Completed vehicles awaiting final release or pickup.</p>
         </article>
       </section>
+
+      <CapacityIntegrationPanel
+        repairOrders={repairOrders}
+        title="Regional Capacity Snapshot"
+      />
 
       <section className="mission-layout">
         <article className="panel">

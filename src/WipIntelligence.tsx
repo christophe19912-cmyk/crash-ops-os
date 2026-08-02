@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import CapacityIntegrationPanel from "./CapacityIntegrationPanel";
 import type { RepairOrder } from "./models/RepairOrder";
 import {
   daysSince,
@@ -317,6 +318,12 @@ function WipIntelligence() {
           </small>
         </article>
       </section>
+
+      <CapacityIntegrationPanel
+        repairOrders={repairOrders}
+        selectedShop={selectedShop}
+        title="WIP Capacity Position"
+      />
 
       <section className="wip-shop-grid">
         {visibleSummaries.map((summary) => {

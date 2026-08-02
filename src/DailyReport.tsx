@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import CapacityIntegrationPanel from "./CapacityIntegrationPanel";
 import {
   loadImportedWip,
   normalizeRepairOrders,
@@ -229,6 +230,13 @@ function DailyReport() {
               </strong>
             </article>
           </section>
+
+          <CapacityIntegrationPanel
+            compact
+            repairOrders={repairOrders}
+            selectedShop={selectedShop}
+            title="Today's Scheduling Direction"
+          />
 
           {recommendations.length === 0 ? (
             <section className="panel daily-empty">
