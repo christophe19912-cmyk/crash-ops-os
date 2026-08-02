@@ -2227,3 +2227,103 @@ button {
     grid-template-columns: 1fr;
   }
 }
+
+/* MISSION CONTROL INTELLIGENCE MIGRATION V1 */
+
+.mission-intelligence-alerts {
+  margin-bottom: 18px;
+}
+
+.mission-intelligence-alert-list {
+  display: grid;
+  gap: 10px;
+}
+
+.mission-intelligence-alert-list > p {
+  color: #64748b;
+  font-size: 12px;
+}
+
+.mission-intelligence-alert {
+  display: grid;
+  grid-template-columns: 90px 1fr;
+  gap: 12px;
+  align-items: start;
+  padding: 12px;
+  border-radius: 10px;
+  background: #0b1120;
+}
+
+.mission-intelligence-alert strong {
+  color: #f8fafc;
+  font-size: 12px;
+}
+
+.mission-intelligence-alert p {
+  margin: 5px 0;
+  color: #94a3b8;
+  font-size: 11px;
+  line-height: 1.45;
+}
+
+.mission-intelligence-alert small {
+  color: #64748b;
+  line-height: 1.4;
+}
+
+.mission-core-recommendations {
+  margin-top: 18px;
+}
+
+.mission-core-recommendation-list {
+  display: grid;
+  gap: 10px;
+}
+
+.mission-core-recommendation-list article {
+  display: grid;
+  grid-template-columns: minmax(190px, 0.8fr) minmax(260px, 1.5fr) 160px;
+  gap: 14px;
+  align-items: start;
+  padding: 12px;
+  border-radius: 10px;
+  background: #0b1120;
+}
+
+.mission-core-recommendation-list strong,
+.mission-core-recommendation-list span {
+  display: block;
+}
+
+.mission-core-recommendation-list strong {
+  color: #f8fafc;
+  font-size: 11px;
+}
+
+.mission-core-recommendation-list span {
+  margin-top: 4px;
+  color: #94a3b8;
+  font-size: 10px;
+}
+
+.mission-core-recommendation-list p {
+  margin: 0;
+  color: #cbd5e1;
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+.mission-core-recommendation-list small {
+  color: #64748b;
+}
+
+@media (max-width: 750px) {
+  .mission-intelligence-alert {
+    grid-template-columns: 1fr;
+  }
+
+  .mission-core-recommendation-list article {
+    grid-template-columns: 1fr;
+  }
+}
+
