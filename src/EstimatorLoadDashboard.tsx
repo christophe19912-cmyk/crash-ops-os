@@ -208,6 +208,9 @@ function EstimatorLoadDashboard() {
                   {estimator.shop}
                 </p>
                 <h3>{estimator.estimator}</h3>
+                <span className="estimator-role-label">
+                  {estimator.role}
+                </span>
               </div>
 
               <span
@@ -246,7 +249,10 @@ function EstimatorLoadDashboard() {
             <div className="estimator-load-metrics">
               <div>
                 <span>Open Files</span>
-                <strong>{estimator.openRepairCount}</strong>
+                <strong>
+                  {estimator.openRepairCount} /{" "}
+                  {estimator.adjustedFileCapacity.toFixed(1)}
+                </strong>
               </div>
 
               <div>
@@ -273,6 +279,15 @@ function EstimatorLoadDashboard() {
                 <strong>
                   {estimator.highRiskRepairCount} /{" "}
                   {estimator.criticalRepairCount}
+                </strong>
+              </div>
+
+              <div>
+                <span>Supplement Role</span>
+                <strong>
+                  {estimator.supplementResponsibility
+                    ? "Yes"
+                    : "No"}
                 </strong>
               </div>
 

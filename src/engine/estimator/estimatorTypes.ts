@@ -24,6 +24,10 @@ export type EstimatorLoad = {
   id: string;
   shop: string;
   estimator: string;
+  role: string;
+  supplementResponsibility: boolean;
+  configuredFileCapacity: number;
+  adjustedFileCapacity: number;
   openRepairCount: number;
   activeRepairCount: number;
   totalLaborHours: number;

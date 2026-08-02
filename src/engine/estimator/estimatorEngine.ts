@@ -2,6 +2,7 @@ import type {
   IntelligenceSnapshot,
   RepairIntelligence,
 } from "../intelligence";
+import { getEstimatorSettings } from "../../services/estimatorSettings";
 import type {
   EstimatorLoad,
   EstimatorLoadSnapshot,
@@ -227,22 +228,76 @@ export function buildEstimatorLoadSnapshot(
         item.workloadScore ||
         1;
 
-      const workloadIndexPercent =
+      const estimatorSettings =
+        getEstimatorSettings(
+          item.shop,
+          item.estimator,
+        );
+
+      const availabilityFactor =
+        Math.max(
+          0,
+          estimatorSettings.weeklyAvailabilityHours,
+        ) / 40;
+
+      const ptoFactor =
+        Math.max(
+          0,
+          1 -
+            estimatorSettings.ptoDaysThisWeek /
+              5,
+        );
+
+      const adjustedFileCapacity =
+        estimatorSettings.active
+          ? Math.max(
+              1,
+              estimatorSettings.expectedFileCapacity *
+                availabilityFactor *
+                ptoFactor *
+                estimatorSettings.workloadAdjustment,
+            )
+          : 1;
+
+      const capacityIndexPercent =
+        item.estimator === "Unassigned"
+          ? 0
+          : (item.repairs.length /
+              adjustedFileCapacity) *
+            100;
+
+      const complexityIndexPercent =
         item.estimator === "Unassigned"
           ? 0
           : (item.workloadScore /
               teamAverageScore) *
             100;
 
-      const status = getStatus(
-        item.estimator,
-        workloadIndexPercent,
-      );
+      const workloadIndexPercent =
+        item.estimator === "Unassigned"
+          ? 0
+          : capacityIndexPercent * 0.55 +
+            complexityIndexPercent * 0.45;
+
+      const status =
+        !estimatorSettings.active &&
+        item.estimator !== "Unassigned"
+          ? "Overloaded"
+          : getStatus(
+              item.estimator,
+              workloadIndexPercent,
+            );
 
       return {
         id: item.id,
         shop: item.shop,
         estimator: item.estimator,
+        role: estimatorSettings.role,
+        supplementResponsibility:
+          estimatorSettings.supplementResponsibility,
+        configuredFileCapacity:
+          estimatorSettings.expectedFileCapacity,
+        adjustedFileCapacity,
         openRepairCount: item.repairs.length,
         activeRepairCount:
           item.activeRepairs.length,
