@@ -447,3 +447,180 @@ button {
     font-size: 25px;
   }
 }
+
+.report-selector {
+  min-width: 180px;
+  padding: 10px 12px;
+  border: 1px solid #334155;
+  border-radius: 10px;
+  background: #111827;
+  color: #e5e7eb;
+}
+
+.daily-empty {
+  display: grid;
+  place-items: center;
+  min-height: 360px;
+  text-align: center;
+}
+
+.daily-empty h3 {
+  margin: 18px 0 8px;
+  font-size: 24px;
+}
+
+.daily-empty p {
+  max-width: 540px;
+  margin: 0;
+  color: #94a3b8;
+  line-height: 1.6;
+}
+
+.ai-mark {
+  display: grid;
+  place-items: center;
+  width: 76px;
+  height: 76px;
+  border-radius: 22px;
+  background: linear-gradient(135deg, #2563eb, #06b6d4);
+  color: white;
+  font-size: 28px;
+  font-weight: 900;
+}
+
+.daily-summary-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 220px;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.daily-summary h3 {
+  margin: 0 0 10px;
+  color: #f8fafc;
+}
+
+.daily-summary p:last-child {
+  margin: 0;
+  color: #cbd5e1;
+  line-height: 1.6;
+}
+
+.completion-card {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.completion-card span {
+  color: #94a3b8;
+  font-size: 13px;
+}
+
+.completion-card strong {
+  margin-top: 8px;
+  color: #f8fafc;
+  font-size: 30px;
+}
+
+.daily-task-list {
+  display: grid;
+  gap: 14px;
+}
+
+.daily-task {
+  transition:
+    opacity 0.2s ease,
+    border-color 0.2s ease;
+}
+
+.daily-task.completed {
+  opacity: 0.55;
+  border-color: rgba(34, 197, 94, 0.45);
+}
+
+.daily-task-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.priority-badge,
+.shop-badge {
+  display: inline-block;
+  margin-right: 8px;
+  padding: 5px 9px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.priority-badge.high {
+  background: rgba(239, 68, 68, 0.15);
+  color: #fca5a5;
+}
+
+.priority-badge.medium {
+  background: rgba(245, 158, 11, 0.15);
+  color: #fcd34d;
+}
+
+.priority-badge.low {
+  background: rgba(34, 197, 94, 0.15);
+  color: #86efac;
+}
+
+.shop-badge {
+  background: #172554;
+  color: #93c5fd;
+}
+
+.complete-control {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  color: #94a3b8;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.daily-task h3 {
+  margin: 18px 0 14px;
+  color: #f8fafc;
+}
+
+.daily-task-grid {
+  display: grid;
+  grid-template-columns: 1.5fr 1.5fr 0.7fr;
+  gap: 18px;
+}
+
+.daily-task-grid span {
+  color: #64748b;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.daily-task-grid p {
+  margin: 6px 0 0;
+  color: #cbd5e1;
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+@media (max-width: 900px) {
+  .daily-summary-grid,
+  .daily-task-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 760px) {
+  .report-selector {
+    flex: 1;
+    min-width: 0;
+  }
+}
