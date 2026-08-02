@@ -1770,3 +1770,93 @@ button {
     grid-template-columns: 1fr;
   }
 }
+
+.capacity-plan-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.5fr) minmax(300px, 0.6fr);
+  gap: 18px;
+}
+
+.capacity-plan-table {
+  overflow-x: auto;
+}
+
+.capacity-plan-row {
+  display: grid;
+  grid-template-columns:
+    100px 55px 55px 65px 55px 80px 100px 120px;
+  gap: 10px;
+  align-items: center;
+  min-width: 760px;
+  padding: 13px 8px;
+  border-top: 1px solid #1f2937;
+  color: #cbd5e1;
+  font-size: 12px;
+}
+
+.capacity-plan-header {
+  border-top: 0;
+  color: #64748b;
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.capacity-plan-row strong {
+  color: #f8fafc;
+}
+
+.capacity-plan-row small {
+  grid-column: 1 / -1;
+  color: #64748b;
+}
+
+.capacity-mix-list {
+  display: grid;
+  gap: 9px;
+}
+
+.capacity-mix-list div {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px;
+  border-radius: 10px;
+  background: #0b1120;
+}
+
+.capacity-mix-list span {
+  color: #94a3b8;
+  font-size: 12px;
+}
+
+.capacity-mix-list strong {
+  color: #f8fafc;
+}
+
+.capacity-settings-reference {
+  margin-top: 14px;
+  padding: 12px;
+  border-radius: 10px;
+  background: #0b1120;
+}
+
+.capacity-settings-reference span {
+  color: #64748b;
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.capacity-settings-reference p {
+  margin: 6px 0 0;
+  color: #94a3b8;
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+@media (max-width: 1000px) {
+  .capacity-plan-grid {
+    grid-template-columns: 1fr;
+  }
+}

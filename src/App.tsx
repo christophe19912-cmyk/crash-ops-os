@@ -6,6 +6,8 @@ import DailyReport from "./DailyReport";
 import MissionControl from "./MissionControl";
 import ProductionBoard from "./ProductionBoard";
 import OperationsEngineTest from "./OperationsEngineTest";
+import WipCapacitySettings from "./WipCapacitySettings";
+import CapacityPlanning from "./CapacityPlanning";
 
 type Page =
   | "Mission Control"
@@ -92,6 +94,14 @@ function App() {
 
     if (activePage === "KPIs") {
       return <OperationsEngineTest />;
+    }
+
+    if (activePage === "Administration") {
+      return <WipCapacitySettings />;
+    }
+
+    if (activePage === "Scheduling") {
+      return <CapacityPlanning />;
     }
 
 
