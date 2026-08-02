@@ -4,6 +4,7 @@ import ImportCenter from "./ImportCenter";
 import WipIntelligence from "./WipIntelligence";
 import DailyReport from "./DailyReport";
 import MissionControl from "./MissionControl";
+import ProductionBoard from "./ProductionBoard";
 import OperationsEngineTest from "./OperationsEngineTest";
 
 type Page =
@@ -75,6 +76,10 @@ function App() {
 
     if (activePage === "dAIly Report") {
       return <DailyReport />;
+    }
+
+    if (activePage === "Production Board") {
+      return <ProductionBoard />;
     }
 
     if (activePage === "Import Center") {
