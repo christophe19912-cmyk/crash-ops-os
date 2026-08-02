@@ -1152,3 +1152,75 @@ button {
     grid-template-columns: 1fr;
   }
 }
+
+.engine-health-score {
+  display: flex;
+  align-items: baseline;
+  gap: 5px;
+  margin-bottom: 16px;
+}
+
+.engine-health-score strong {
+  color: #f8fafc;
+  font-size: 42px;
+}
+
+.engine-health-score span {
+  color: #64748b;
+  font-size: 14px;
+}
+
+.engine-repair-list {
+  display: grid;
+}
+
+.engine-repair-row {
+  display: grid;
+  grid-template-columns:
+    minmax(180px, 1.2fr)
+    minmax(130px, 0.8fr)
+    70px
+    70px
+    80px
+    minmax(280px, 1.8fr);
+  gap: 14px;
+  align-items: start;
+  padding: 14px 8px;
+  border-top: 1px solid #1f2937;
+}
+
+.engine-repair-row:first-child {
+  border-top: 0;
+}
+
+.engine-repair-row div > span {
+  display: block;
+  margin-bottom: 4px;
+  color: #64748b;
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.engine-repair-row div > strong {
+  display: block;
+  color: #e5e7eb;
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.engine-repair-row > div:first-child strong {
+  color: #f8fafc;
+}
+
+.engine-repair-row > div:first-child span {
+  margin-top: 4px;
+  margin-bottom: 0;
+  text-transform: none;
+}
+
+@media (max-width: 1000px) {
+  .engine-repair-row {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}

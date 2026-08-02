@@ -3,6 +3,7 @@ import "./App.css";
 import ImportCenter from "./ImportCenter";
 import WipIntelligence from "./WipIntelligence";
 import DailyReport from "./DailyReport";
+import OperationsEngineTest from "./OperationsEngineTest";
 
 type Page =
   | "Dashboard"
@@ -238,6 +239,10 @@ function App() {
 
     if (activePage === "WIP Capacity") {
       return <WipIntelligence />;
+    }
+
+    if (activePage === "KPIs") {
+      return <OperationsEngineTest />;
     }
 
 
