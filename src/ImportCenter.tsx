@@ -23,6 +23,14 @@ type ImportIssue = {
   message: string;
 };
 
+const shopOptions = [
+  "Monroeville",
+  "Greensburg",
+  "North Hills",
+  "North Huntingdon",
+  "Canonsburg",
+];
+
 const requiredColumns: (keyof NexsyisRow)[] = [
   "Loc Code",
   "Folder",
@@ -53,6 +61,8 @@ function ImportCenter() {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [fileName, setFileName] = useState("");
+const [selectedShop, setSelectedShop] =
+  useState("North Hills");
   const [rows, setRows] = useState<NexsyisRow[]>([]);
   const [issues, setIssues] = useState<ImportIssue[]>([]);
   const [missingColumns, setMissingColumns] = useState<string[]>([]);
@@ -203,12 +213,16 @@ function ImportCenter() {
 
   function applyImport() {
     const importRecord = {
-      source: "Nexsyis WIP CSV",
-      fileName,
-      importedAt: new Date().toISOString(),
-      rowCount: rows.length,
-      rows,
-    };
+  source: "Nexsyis WIP CSV",
+  fileName,
+  importedAt: new Date().toISOString(),
+  rowCount: rows.length,
+  selectedShop,
+  rows: rows.map((row) => ({
+    ...row,
+    "Crash Ops Shop": selectedShop,
+  })),
+};
 
     localStorage.setItem(
       "crashOpsLastWipImport",
@@ -263,7 +277,24 @@ function ImportCenter() {
         </div>
 
         <div className="import-upload-actions">
-          <input
+  <label className="import-shop-selector">
+    <span>Report belongs to</span>
+
+    <select
+      onChange={(event) =>
+        setSelectedShop(event.target.value)
+      }
+      value={selectedShop}
+    >
+      {shopOptions.map((shop) => (
+        <option key={shop} value={shop}>
+          {shop}
+        </option>
+      ))}
+    </select>
+  </label>
+
+  <input
             accept=".csv,text/csv"
             onChange={(event) => {
               const file = event.target.files?.[0];
