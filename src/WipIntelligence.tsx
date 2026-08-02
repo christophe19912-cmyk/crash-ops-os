@@ -5,6 +5,9 @@ import {
   loadImportedWip,
   normalizeRepairOrders,
 } from "./services/importedData";
+import {
+  isProductionHold,
+} from "./services/stageDictionary";
 
 type ShopSummary = {
   shop: string;
@@ -20,15 +23,7 @@ type ShopSummary = {
   stageCounts: Record<string, number>;
 };
 
-function isHoldStage(stage: string) {
-  const normalized = stage.toUpperCase();
 
-  return (
-    normalized.includes("HOLD") ||
-    normalized === "C/HLD" ||
-    normalized === "HLD"
-  );
-}
 
 function buildShopSummaries(
   repairOrders: RepairOrder[],
@@ -77,7 +72,7 @@ function buildShopSummaries(
         preTaxTotal,
         averageLaborHours:
           orders.length > 0 ? laborHours / orders.length : 0,
-        holds: orders.filter((order) => isHoldStage(order.stage))
+        holds: orders.filter((order) => isProductionHold(order.stage))
           .length,
         unassignedStages: orders.filter(
           (order) => order.stage === "Unassigned",
@@ -159,7 +154,7 @@ function buildTimeline(order: RepairOrder) {
     label: `Current stage: ${order.stage}`,
     date: "Current",
     detail:
-      isHoldStage(order.stage)
+      isProductionHold(order.stage)
         ? "This repair is currently identified as a hold."
         : "This is the latest production stage in the imported report.",
   });
@@ -214,7 +209,7 @@ function WipIntelligence() {
   );
 
   const totalHolds = visibleOrders.filter((order) =>
-    isHoldStage(order.stage),
+    isProductionHold(order.stage),
   ).length;
 
   const agingOrders = visibleOrders
@@ -443,7 +438,7 @@ function WipIntelligence() {
 
                   <span
                     className={
-                      isHoldStage(order.stage)
+                      isProductionHold(order.stage)
                         ? "stage-hold"
                         : ""
                     }
