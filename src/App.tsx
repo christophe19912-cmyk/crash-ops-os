@@ -7,7 +7,7 @@ import MissionControl from "./MissionControl";
 import ProductionBoard from "./ProductionBoard";
 import OperationsEngineTest from "./OperationsEngineTest";
 import WipCapacitySettings from "./WipCapacitySettings";
-import CapacityPlanning from "./CapacityPlanning";
+import SchedulingBoard from "./SchedulingBoard";
 
 type Page =
   | "Mission Control"
@@ -101,7 +101,7 @@ function App() {
     }
 
     if (activePage === "Scheduling") {
-      return <CapacityPlanning />;
+      return <SchedulingBoard />;
     }
 
 
