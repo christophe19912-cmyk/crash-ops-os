@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { buildIntelligenceSnapshot } from "./engine/intelligence/intelligenceEngine";
+import { buildIntelligenceSnapshot } from "./engine/intelligence";
 import {
   loadImportedWip,
   normalizeRepairOrders,

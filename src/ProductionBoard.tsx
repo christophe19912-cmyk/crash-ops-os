@@ -3,7 +3,7 @@ import type { RiskLevel } from "./engine/operationsEngine";
 import {
   buildIntelligenceSnapshot,
   type RepairIntelligence,
-} from "./engine/intelligence/intelligenceEngine";
+} from "./engine/intelligence";
 import {
   loadImportedWip,
   normalizeRepairOrders,

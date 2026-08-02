@@ -2,7 +2,7 @@ import { useMemo } from "react";
 import {
   buildIntelligenceSnapshot,
   type RepairIntelligence,
-} from "./engine/intelligence/intelligenceEngine";
+} from "./engine/intelligence";
 
 import type { RiskLevel } from "./engine/operationsEngine";
 import {

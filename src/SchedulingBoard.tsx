@@ -6,7 +6,7 @@ import type {
 } from "./models/ScheduledDrop";
 import {
   buildIntelligenceSnapshot,
-} from "./engine/intelligence/intelligenceEngine";
+} from "./engine/intelligence";
 import {
   loadImportedWip,
   normalizeRepairOrders,
