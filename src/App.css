@@ -2007,3 +2007,150 @@ button {
     );
   }
 }
+
+.capacity-integration {
+  margin-bottom: 18px;
+}
+
+.capacity-integration-grid {
+  display: grid;
+  grid-template-columns: repeat(
+    auto-fit,
+    minmax(300px, 1fr)
+  );
+  gap: 14px;
+}
+
+.capacity-integration-shop {
+  padding: 15px;
+  border: 1px solid #1f2937;
+  border-radius: 13px;
+  background: #0b1120;
+}
+
+.capacity-integration-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.capacity-integration-heading strong,
+.capacity-integration-heading span {
+  display: block;
+}
+
+.capacity-integration-heading strong {
+  color: #f8fafc;
+}
+
+.capacity-integration-heading div > span {
+  margin-top: 4px;
+  color: #64748b;
+  font-size: 10px;
+}
+
+.capacity-integration-metrics {
+  display: grid;
+  grid-template-columns: repeat(
+    3,
+    minmax(0, 1fr)
+  );
+  gap: 7px;
+}
+
+.capacity-integration-metrics div {
+  padding: 9px;
+  border-radius: 8px;
+  background: #111827;
+}
+
+.capacity-integration-metrics span,
+.capacity-integration-metrics strong {
+  display: block;
+}
+
+.capacity-integration-metrics span {
+  color: #64748b;
+  font-size: 9px;
+  text-transform: uppercase;
+}
+
+.capacity-integration-metrics strong {
+  margin-top: 4px;
+  color: #e5e7eb;
+  font-size: 12px;
+}
+
+.capacity-drop-action {
+  margin-top: 12px;
+  padding: 12px;
+  border-left: 3px solid #3b82f6;
+  border-radius: 9px;
+  background: rgba(37, 99, 235, 0.08);
+}
+
+.capacity-drop-action > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.capacity-drop-action span {
+  color: #93c5fd;
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.capacity-drop-action strong {
+  color: #f8fafc;
+  font-size: 13px;
+}
+
+.capacity-drop-action p {
+  margin: 8px 0 4px;
+  color: #cbd5e1;
+  font-size: 12px;
+}
+
+.capacity-drop-action small {
+  color: #64748b;
+  line-height: 1.4;
+}
+
+.capacity-integration-recommendation {
+  margin-top: 12px;
+}
+
+.capacity-integration-recommendation span {
+  color: #64748b;
+  font-size: 9px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.capacity-integration-recommendation p {
+  margin: 5px 0 0;
+  color: #94a3b8;
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+.capacity-integration.compact
+  .capacity-integration-grid {
+  grid-template-columns: repeat(
+    auto-fit,
+    minmax(260px, 1fr)
+  );
+}
+
+@media (max-width: 650px) {
+  .capacity-integration-metrics {
+    grid-template-columns: repeat(
+      2,
+      minmax(0, 1fr)
+    );
+  }
+}
