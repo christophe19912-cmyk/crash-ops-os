@@ -1,18 +1,16 @@
 import { useMemo, useState } from "react";
-import { buildIntelligenceSnapshot } from "./engine/intelligence/intelligenceEngine";
+import CapacityIntegrationPanel from "./CapacityIntegrationPanel";
 import {
   loadImportedWip,
   normalizeRepairOrders,
 } from "./services/importedData";
+import {
+  buildOperationalRecommendations,
+  type OperationalPriority,
+} from "./services/recommendationEngine";
 
-function priorityClass(priority: string) {
+function priorityClass(priority: OperationalPriority) {
   return priority.toLowerCase();
-}
-
-function alertClass(severity: string) {
-  if (severity === "Info") return "good";
-  if (severity === "Warning") return "warning";
-  return "alert";
 }
 
 function DailyReport() {
@@ -23,14 +21,12 @@ function DailyReport() {
     [importedRecord],
   );
 
-  const intelligence = useMemo(
-    () => buildIntelligenceSnapshot(repairOrders),
-    [repairOrders],
-  );
-
   const shops = useMemo(
-    () => intelligence.shops.map((shop) => shop.shop),
-    [intelligence.shops],
+    () =>
+      Array.from(
+        new Set(repairOrders.map((order) => order.shop)),
+      ).sort(),
+    [repairOrders],
   );
 
   const [selectedShop, setSelectedShop] =
@@ -42,57 +38,33 @@ function DailyReport() {
     [],
   );
 
-  const visibleShops =
-    selectedShop === "All Locations"
-      ? intelligence.shops
-      : intelligence.shops.filter(
-          (shop) => shop.shop === selectedShop,
-        );
+  const recommendations = useMemo(() => {
+    const applicableOrders =
+      selectedShop === "All Locations"
+        ? repairOrders
+        : repairOrders.filter(
+            (order) => order.shop === selectedShop,
+          );
 
-  const recommendations =
-    selectedShop === "All Locations"
-      ? intelligence.recommendations
-      : intelligence.recommendations.filter(
-          (recommendation) =>
-            recommendation.shop === selectedShop,
-        );
+    return buildOperationalRecommendations(applicableOrders);
+  }, [repairOrders, selectedShop]);
 
-  const alerts =
-    selectedShop === "All Locations"
-      ? intelligence.alerts
-      : intelligence.alerts.filter(
-          (alert) => alert.shop === selectedShop,
-        );
-
-  const priorityTotals = {
-    critical: recommendations.filter(
-      (item) => item.priority === "Critical",
-    ).length,
-    high: recommendations.filter(
-      (item) => item.priority === "High",
-    ).length,
-    medium: recommendations.filter(
-      (item) => item.priority === "Medium",
-    ).length,
-    low: recommendations.filter(
-      (item) => item.priority === "Low",
-    ).length,
-  };
-
-  const selectedRepairCount = visibleShops.reduce(
-    (total, shop) => total + shop.repairs.length,
-    0,
-  );
-
-  const selectedActiveHours = visibleShops.reduce(
-    (total, shop) => total + shop.activeLaborHours,
-    0,
-  );
-
-  const selectedWeeklyDrops = visibleShops.reduce(
-    (total, shop) =>
-      total + shop.capacityPlan.recommendedWeeklyDrops,
-    0,
+  const priorityTotals = useMemo(
+    () => ({
+      critical: recommendations.filter(
+        (item) => item.priority === "Critical",
+      ).length,
+      high: recommendations.filter(
+        (item) => item.priority === "High",
+      ).length,
+      medium: recommendations.filter(
+        (item) => item.priority === "Medium",
+      ).length,
+      low: recommendations.filter(
+        (item) => item.priority === "Low",
+      ).length,
+    }),
+    [recommendations],
   );
 
   function toggleComplete(id: string) {
@@ -115,8 +87,8 @@ function DailyReport() {
             <h2>dAIly Report</h2>
 
             <p className="page-description">
-              Generate an operating plan from the shared Crash Ops
-              Intelligence Snapshot.
+              Generate an operating plan from imported Nexsyis
+              repair-order data.
             </p>
           </div>
         </header>
@@ -128,7 +100,7 @@ function DailyReport() {
 
           <p>
             Open Import Center, select the correct store, upload the
-            WIP report, and click Apply Import.
+            Nexsyis WIP report, and click Apply Import.
           </p>
         </section>
       </>
@@ -140,14 +112,14 @@ function DailyReport() {
       <header className="topbar">
         <div>
           <p className="eyebrow">
-            INTELLIGENCE CORE · DAILY OPERATING PLAN
+            IMPORTED OPERATIONS INTELLIGENCE
           </p>
 
           <h2>dAIly Report</h2>
 
           <p className="page-description">
-            Generate one prioritized operating plan from repair,
-            capacity, health, alert, and recommendation intelligence.
+            Generate a repair-level playbook using the latest imported
+            Nexsyis WIP report.
           </p>
         </div>
 
@@ -187,20 +159,24 @@ function DailyReport() {
         </div>
 
         <div>
-          <span>Selected scope</span>
-          <strong>{selectedShop}</strong>
+          <span>Assigned location</span>
+          <strong>
+            {shops.length === 1
+              ? shops[0]
+              : `${shops.length} locations`}
+          </strong>
         </div>
 
         <div>
           <span>Repair orders analyzed</span>
-          <strong>{selectedRepairCount}</strong>
+          <strong>{repairOrders.length}</strong>
         </div>
 
         <div>
-          <span>Snapshot generated</span>
+          <span>Imported</span>
           <strong>
             {new Date(
-              intelligence.generatedAt,
+              importedRecord.importedAt,
             ).toLocaleString()}
           </strong>
         </div>
@@ -210,12 +186,12 @@ function DailyReport() {
         <section className="panel daily-empty">
           <div className="ai-mark">AI</div>
 
-          <h3>Intelligence Snapshot is ready</h3>
+          <h3>Imported data is ready</h3>
 
           <p>
-            Generate the report to combine repair priorities,
-            production blockers, parts risk, delivery closeout,
-            aging, and capacity direction into one task list.
+            Generate the report to identify production holds,
+            back-ordered parts, completed delivery holds, large
+            blueprints, missing assignments, and aging repairs.
           </p>
         </section>
       ) : (
@@ -229,11 +205,12 @@ function DailyReport() {
               <h3>{selectedShop} operating plan</h3>
 
               <p>
-                The Intelligence Core identified{" "}
-                {priorityTotals.critical} critical,{" "}
+                The system identified {priorityTotals.critical} critical,
+                {" "}
                 {priorityTotals.high} high-priority,{" "}
                 {priorityTotals.medium} medium-priority, and{" "}
-                {priorityTotals.low} low-priority repair actions.
+                {priorityTotals.low} low-priority actions from the
+                imported repair orders.
               </p>
             </article>
 
@@ -254,130 +231,23 @@ function DailyReport() {
             </article>
           </section>
 
-          <section className="daily-intelligence-overview">
-            <article className="card">
-              <p>Active Labor Hours</p>
-              <strong>{selectedActiveHours.toFixed(1)}</strong>
-              <small>Completed holds excluded</small>
-            </article>
-
-            <article className="card">
-              <p>Critical Alerts</p>
-              <strong>
-                {
-                  alerts.filter(
-                    (alert) =>
-                      alert.severity === "Critical",
-                  ).length
-                }
-              </strong>
-              <small>Immediate operating conditions</small>
-            </article>
-
-            <article className="card">
-              <p>Recommended Weekly Drops</p>
-              <strong>{selectedWeeklyDrops}</strong>
-              <small>Capacity-guided intake</small>
-            </article>
-
-            <article className="card">
-              <p>Shops Reviewed</p>
-              <strong>{visibleShops.length}</strong>
-              <small>Locations in this report</small>
-            </article>
-          </section>
-
-          <section className="panel daily-capacity-direction">
-            <div className="panel-header">
-              <div>
-                <p className="section-label">
-                  TODAY’S CAPACITY DIRECTION
-                </p>
-                <h3>Scheduling and Intake Actions</h3>
-              </div>
-            </div>
-
-            <div className="daily-capacity-shop-list">
-              {visibleShops.map((shop) => {
-                const today =
-                  shop.capacityPlan.fiveDayPlan[0];
-
-                return (
-                  <article key={shop.shop}>
-                    <div>
-                      <strong>{shop.shop}</strong>
-                      <span>
-                        {shop.capacity.status} ·{" "}
-                        {shop.capacity.weeksToClear} weeks to clear
-                      </span>
-                    </div>
-
-                    <div>
-                      <strong>
-                        {today.totalDrops} drops today
-                      </strong>
-                      <span>
-                        {today.lightDrops} light ·{" "}
-                        {today.mediumDrops} medium ·{" "}
-                        {today.heavyDrops} heavy
-                      </span>
-                    </div>
-
-                    <p>{shop.capacity.recommendation}</p>
-                  </article>
-                );
-              })}
-            </div>
-          </section>
-
-          <section className="panel daily-alert-section">
-            <div className="panel-header">
-              <div>
-                <p className="section-label">
-                  INTELLIGENCE ALERTS
-                </p>
-                <h3>Operating Conditions Requiring Attention</h3>
-              </div>
-            </div>
-
-            <div className="daily-alert-list">
-              {alerts.length === 0 ? (
-                <p>No intelligence alerts were generated.</p>
-              ) : (
-                alerts.map((alert) => (
-                  <article key={alert.id}>
-                    <span
-                      className={`status ${alertClass(
-                        alert.severity,
-                      )}`}
-                    >
-                      {alert.severity}
-                    </span>
-
-                    <div>
-                      <strong>
-                        {alert.shop} · {alert.title}
-                      </strong>
-                      <p>{alert.explanation}</p>
-                      <small>
-                        Next: {alert.recommendedAction}
-                      </small>
-                    </div>
-                  </article>
-                ))
-              )}
-            </div>
-          </section>
+          <CapacityIntegrationPanel
+            compact
+            repairOrders={repairOrders}
+            selectedShop={selectedShop}
+            title="Today's Scheduling Direction"
+          />
 
           {recommendations.length === 0 ? (
             <section className="panel daily-empty">
               <div className="ai-mark">AI</div>
 
-              <h3>No repair actions were triggered</h3>
+              <h3>No recommendation rules were triggered</h3>
 
               <p>
-                No repairs in the selected scope currently match the
-                active blocker, aging, assignment, or blueprint rules.
+                The imported report contains no repairs currently
+                matching the active blocker, aging, assignment, or
+                large-blueprint rules.
               </p>
             </section>
           ) : (
@@ -438,13 +308,13 @@ function DailyReport() {
 
                     <div className="daily-task-grid">
                       <div>
-                        <span>What is wrong?</span>
-                        <p>{recommendation.reason}</p>
+                        <span>Recommended action</span>
+                        <p>{recommendation.action}</p>
                       </div>
 
                       <div>
-                        <span>What should happen next?</span>
-                        <p>{recommendation.action}</p>
+                        <span>Why this was generated</span>
+                        <p>{recommendation.reason}</p>
                       </div>
 
                       <div>
