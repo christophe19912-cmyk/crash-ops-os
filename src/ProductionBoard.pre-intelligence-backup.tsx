@@ -1,14 +1,15 @@
 import { useMemo, useState } from "react";
-import type { RiskLevel } from "./engine/operationsEngine";
 import {
-  buildIntelligenceSnapshot,
-  type RepairIntelligence,
-} from "./engine/intelligence/intelligenceEngine";
+  evaluateRepair,
+  type RepairHealth,
+  type RiskLevel,
+} from "./engine/operationsEngine";
 import {
   loadImportedWip,
   normalizeRepairOrders,
 } from "./services/importedData";
 import {
+  getStageDefinition,
   isBackOrderedParts,
   isCompletedHold,
   isProductionHold,
@@ -21,14 +22,46 @@ type BoardColumn = {
 };
 
 const boardColumns: BoardColumn[] = [
-  { id: "arrival", title: "Arrival", stages: ["ARRIVAL"] },
-  { id: "blueprint", title: "Blueprint", stages: ["BP"] },
-  { id: "parts-ordered", title: "Parts Ordered", stages: ["PO"] },
-  { id: "backordered", title: "Back Ordered Parts", stages: ["BOP"] },
-  { id: "hold", title: "Production Hold", stages: ["HOLD", "HLD"] },
-  { id: "body", title: "Body", stages: ["BODY"] },
-  { id: "paint", title: "Paint", stages: ["PNT"] },
-  { id: "reassembly", title: "Reassembly", stages: ["RSSMB"] },
+  {
+    id: "arrival",
+    title: "Arrival",
+    stages: ["ARRIVAL"],
+  },
+  {
+    id: "blueprint",
+    title: "Blueprint",
+    stages: ["BP"],
+  },
+  {
+    id: "parts-ordered",
+    title: "Parts Ordered",
+    stages: ["PO"],
+  },
+  {
+    id: "backordered",
+    title: "Back Ordered Parts",
+    stages: ["BOP"],
+  },
+  {
+    id: "hold",
+    title: "Production Hold",
+    stages: ["HOLD", "HLD"],
+  },
+  {
+    id: "body",
+    title: "Body",
+    stages: ["BODY"],
+  },
+  {
+    id: "paint",
+    title: "Paint",
+    stages: ["PNT"],
+  },
+  {
+    id: "reassembly",
+    title: "Reassembly",
+    stages: ["RSSMB"],
+  },
   {
     id: "completed-hold",
     title: "Completed / Delivery Hold",
@@ -49,26 +82,25 @@ function riskClass(risk: RiskLevel) {
 function stageClass(stage: string) {
   if (isProductionHold(stage)) return "production-card-hold";
   if (isBackOrderedParts(stage)) return "production-card-bop";
-  if (isCompletedHold(stage)) return "production-card-completed";
+  if (isCompletedHold(stage)) {
+    return "production-card-completed";
+  }
+
   return "";
 }
 
 function sortRepairs(
-  repairA: RepairIntelligence,
-  repairB: RepairIntelligence,
+  repairA: RepairHealth,
+  repairB: RepairHealth,
 ) {
   const priorityDifference =
-    repairB.health.priorityScore -
-    repairA.health.priorityScore;
+    repairB.priorityScore - repairA.priorityScore;
 
   if (priorityDifference !== 0) {
     return priorityDifference;
   }
 
-  return (
-    repairA.health.healthScore -
-    repairB.health.healthScore
-  );
+  return repairA.healthScore - repairB.healthScore;
 }
 
 function ProductionBoard() {
@@ -79,67 +111,55 @@ function ProductionBoard() {
     [importedRecord],
   );
 
-  const intelligence = useMemo(
-    () => buildIntelligenceSnapshot(repairOrders),
-    [repairOrders],
-  );
-
   const shops = useMemo(
-    () => intelligence.shops.map((shop) => shop.shop),
-    [intelligence.shops],
+    () =>
+      Array.from(
+        new Set(repairOrders.map((order) => order.shop)),
+      ).sort(),
+    [repairOrders],
   );
 
   const [selectedShop, setSelectedShop] =
     useState("All Locations");
 
   const [selectedRepair, setSelectedRepair] =
-    useState<RepairIntelligence | null>(null);
+    useState<RepairHealth | null>(null);
 
-  const visibleRepairs = useMemo(
+  const visibleOrders = useMemo(
     () =>
       selectedShop === "All Locations"
-        ? intelligence.repairs
-        : intelligence.repairs.filter(
-            (repair) =>
-              repair.repairOrder.shop === selectedShop,
+        ? repairOrders
+        : repairOrders.filter(
+            (order) => order.shop === selectedShop,
           ),
-    [intelligence.repairs, selectedShop],
+    [repairOrders, selectedShop],
   );
 
-  const mappedStages = useMemo(
-    () =>
-      new Set(
-        boardColumns.flatMap(
-          (column) => column.stages,
-        ),
-      ),
-    [],
+  const evaluatedRepairs = useMemo(
+    () => visibleOrders.map(evaluateRepair),
+    [visibleOrders],
   );
 
-  const unmappedRepairs = useMemo(
-    () =>
-      visibleRepairs
-        .filter(
-          (repair) =>
-            !mappedStages.has(
-              normalizeStage(
-                repair.repairOrder.stage,
-              ),
-            ),
-        )
-        .sort(sortRepairs),
-    [mappedStages, visibleRepairs],
-  );
+  const unmappedRepairs = useMemo(() => {
+    const mappedStages = new Set(
+      boardColumns.flatMap((column) => column.stages),
+    );
 
-  function getRepairsForColumn(
-    column: BoardColumn,
-  ) {
-    return visibleRepairs
+    return evaluatedRepairs
+      .filter(
+        (repair) =>
+          !mappedStages.has(
+            normalizeStage(repair.repairOrder.stage),
+          ),
+      )
+      .sort(sortRepairs);
+  }, [evaluatedRepairs]);
+
+  function getRepairsForColumn(column: BoardColumn) {
+    return evaluatedRepairs
       .filter((repair) =>
         column.stages.includes(
-          normalizeStage(
-            repair.repairOrder.stage,
-          ),
+          normalizeStage(repair.repairOrder.stage),
         ),
       )
       .sort(sortRepairs);
@@ -150,9 +170,7 @@ function ProductionBoard() {
       <>
         <header className="topbar">
           <div>
-            <p className="eyebrow">
-              INTELLIGENCE CORE · PRODUCTION
-            </p>
+            <p className="eyebrow">PRODUCTION OPERATIONS</p>
             <h2>Production Board</h2>
             <p className="page-description">
               Track imported repair orders by production stage.
@@ -164,39 +182,27 @@ function ProductionBoard() {
           <div className="ai-mark">PB</div>
           <h3>No imported WIP report found</h3>
           <p>
-            Open Import Center, upload a WIP report,
-            assign the store, and click Apply Import.
+            Open Import Center, upload a Nexsyis WIP report, assign
+            the store, and click Apply Import.
           </p>
         </section>
       </>
     );
   }
 
-  const activeRepairs = visibleRepairs.filter(
-    (repair) => repair.isActiveProduction,
-  );
-
-  const selectedAlerts =
-    selectedShop === "All Locations"
-      ? intelligence.alerts
-      : intelligence.alerts.filter(
-          (alert) => alert.shop === selectedShop,
-        );
-
   return (
     <>
       <header className="topbar">
         <div>
           <p className="eyebrow">
-            INTELLIGENCE CORE · PRODUCTION WORKFLOW
+            IMPORTED PRODUCTION WORKFLOW
           </p>
 
           <h2>Production Board</h2>
 
           <p className="page-description">
-            Review every repair by stage, health, risk,
-            priority, blocker, and recommended next action
-            from one shared intelligence source.
+            Review every imported repair by stage, risk, priority,
+            ownership, and days onsite.
           </p>
         </div>
 
@@ -222,9 +228,9 @@ function ProductionBoard() {
 
       <section className="production-board-summary">
         <article className="metric-card">
-          <span>Active Repairs</span>
+          <span>Visible Repairs</span>
           <strong className="viz-stat-value">
-            {activeRepairs.length}
+            {visibleOrders.length}
           </strong>
         </article>
 
@@ -232,9 +238,8 @@ function ProductionBoard() {
           <span>Production Holds</span>
           <strong className="viz-stat-value">
             {
-              visibleRepairs.filter(
-                (repair) =>
-                  repair.isProductionHold,
+              visibleOrders.filter((order) =>
+                isProductionHold(order.stage),
               ).length
             }
           </strong>
@@ -244,18 +249,21 @@ function ProductionBoard() {
           <span>Back Ordered Parts</span>
           <strong className="viz-stat-value">
             {
-              visibleRepairs.filter(
-                (repair) =>
-                  repair.isBackOrderedParts,
+              visibleOrders.filter((order) =>
+                isBackOrderedParts(order.stage),
               ).length
             }
           </strong>
         </article>
 
         <article className="metric-card">
-          <span>Intelligence Alerts</span>
+          <span>Completed Holds</span>
           <strong className="viz-stat-value">
-            {selectedAlerts.length}
+            {
+              visibleOrders.filter((order) =>
+                isCompletedHold(order.stage),
+              ).length
+            }
           </strong>
         </article>
       </section>
@@ -263,8 +271,7 @@ function ProductionBoard() {
       <section className="production-board-wrapper">
         <div className="production-board">
           {boardColumns.map((column) => {
-            const repairs =
-              getRepairsForColumn(column);
+            const repairs = getRepairsForColumn(column);
 
             return (
               <section
@@ -287,8 +294,7 @@ function ProductionBoard() {
                       .reduce(
                         (total, repair) =>
                           total +
-                          repair.repairOrder
-                            .laborHours,
+                          repair.repairOrder.laborHours,
                         0,
                       )
                       .toFixed(1)}{" "}
@@ -324,16 +330,19 @@ function ProductionBoard() {
                             </strong>
 
                             <span>
-                              {repair.repairOrder.shop}
+                              {
+                                repair.repairOrder
+                                  .shop
+                              }
                             </span>
                           </div>
 
                           <span
                             className={`status ${riskClass(
-                              repair.health.riskLevel,
+                              repair.riskLevel,
                             )}`}
                           >
-                            {repair.health.riskLevel}
+                            {repair.riskLevel}
                           </span>
                         </div>
 
@@ -358,22 +367,21 @@ function ProductionBoard() {
                           <div>
                             <span>Days</span>
                             <strong>
-                              {repair.health.daysOnSite ??
-                                "—"}
+                              {repair.daysOnSite ?? "—"}
                             </strong>
                           </div>
 
                           <div>
                             <span>Health</span>
                             <strong>
-                              {repair.health.healthScore}
+                              {repair.healthScore}
                             </strong>
                           </div>
 
                           <div>
                             <span>Priority</span>
                             <strong>
-                              {repair.health.priorityScore}
+                              {repair.priorityScore}
                             </strong>
                           </div>
                         </div>
@@ -381,30 +389,19 @@ function ProductionBoard() {
                         <div className="production-card-ownership">
                           <span>
                             Tech:{" "}
-                            {
-                              repair.repairOrder
-                                .technician
-                            }
+                            {repair.repairOrder.technician}
                           </span>
 
                           <span>
                             Est:{" "}
-                            {
-                              repair.repairOrder
-                                .estimator
-                            }
+                            {repair.repairOrder.estimator}
                           </span>
                         </div>
 
-                        <div className="production-core-action">
-                          <span>Next action</span>
-                          <p>
-                            {repair.health.nextAction}
-                          </p>
-                        </div>
-
                         <small>
-                          {repair.health.stageName}
+                          {getStageDefinition(
+                            repair.repairOrder.stage,
+                          ).name}
                         </small>
                       </button>
                     ))
@@ -426,47 +423,42 @@ function ProductionBoard() {
               </div>
 
               <div className="production-column-cards">
-                {unmappedRepairs.map(
-                  (repair, index) => (
-                    <button
-                      className="production-repair-card production-card-unmapped"
-                      key={`${repair.repairOrder.roNumber}-${index}`}
-                      onClick={() =>
-                        setSelectedRepair(repair)
-                      }
-                      type="button"
-                    >
-                      <div className="production-card-heading">
-                        <strong>
-                          RO{" "}
-                          {repair.repairOrder.roNumber}
-                        </strong>
+                {unmappedRepairs.map((repair, index) => (
+                  <button
+                    className="production-repair-card production-card-unmapped"
+                    key={`${repair.repairOrder.roNumber}-${index}`}
+                    onClick={() =>
+                      setSelectedRepair(repair)
+                    }
+                    type="button"
+                  >
+                    <div className="production-card-heading">
+                      <strong>
+                        RO {repair.repairOrder.roNumber}
+                      </strong>
 
-                        <span
-                          className={`status ${riskClass(
-                            repair.health.riskLevel,
-                          )}`}
-                        >
-                          {repair.health.riskLevel}
-                        </span>
-                      </div>
+                      <span
+                        className={`status ${riskClass(
+                          repair.riskLevel,
+                        )}`}
+                      >
+                        {repair.riskLevel}
+                      </span>
+                    </div>
 
-                      <h4>
-                        {repair.repairOrder.vehicle}
-                      </h4>
+                    <h4>{repair.repairOrder.vehicle}</h4>
 
-                      <p>
-                        Imported stage:{" "}
-                        {repair.repairOrder.stage}
-                      </p>
+                    <p>
+                      Imported stage:{" "}
+                      {repair.repairOrder.stage}
+                    </p>
 
-                      <small>
-                        Add this stage to the operations
-                        dictionary.
-                      </small>
-                    </button>
-                  ),
-                )}
+                    <small>
+                      Add this stage to the operations
+                      dictionary.
+                    </small>
+                  </button>
+                ))}
               </div>
             </section>
           )}
@@ -478,7 +470,7 @@ function ProductionBoard() {
           <div className="panel-header">
             <div>
               <p className="section-label">
-                REPAIR INTELLIGENCE DETAIL
+                REPAIR OPERATIONS DETAIL
               </p>
 
               <h3>
@@ -490,9 +482,7 @@ function ProductionBoard() {
 
             <button
               className="secondary-button"
-              onClick={() =>
-                setSelectedRepair(null)
-              }
+              onClick={() => setSelectedRepair(null)}
               type="button"
             >
               Close
@@ -510,47 +500,33 @@ function ProductionBoard() {
             <div>
               <span>Customer</span>
               <strong>
-                {
-                  selectedRepair.repairOrder
-                    .customer
-                }
+                {selectedRepair.repairOrder.customer}
               </strong>
             </div>
 
             <div>
               <span>Insurance</span>
               <strong>
-                {
-                  selectedRepair.repairOrder
-                    .insurance
-                }
+                {selectedRepair.repairOrder.insurance}
               </strong>
             </div>
 
             <div>
               <span>Current Stage</span>
-              <strong>
-                {selectedRepair.health.stageName}
-              </strong>
+              <strong>{selectedRepair.stageName}</strong>
             </div>
 
             <div>
               <span>Technician</span>
               <strong>
-                {
-                  selectedRepair.repairOrder
-                    .technician
-                }
+                {selectedRepair.repairOrder.technician}
               </strong>
             </div>
 
             <div>
               <span>Estimator</span>
               <strong>
-                {
-                  selectedRepair.repairOrder
-                    .estimator
-                }
+                {selectedRepair.repairOrder.estimator}
               </strong>
             </div>
 
@@ -580,84 +556,47 @@ function ProductionBoard() {
             <div>
               <span>Days Onsite</span>
               <strong>
-                {selectedRepair.health.daysOnSite ??
-                  "Unavailable"}
+                {selectedRepair.daysOnSite ?? "Unavailable"}
               </strong>
             </div>
 
             <div>
               <span>Health Score</span>
               <strong>
-                {selectedRepair.health.healthScore} / 100
+                {selectedRepair.healthScore} / 100
               </strong>
             </div>
 
             <div>
               <span>Priority Score</span>
               <strong>
-                {selectedRepair.health.priorityScore} / 100
+                {selectedRepair.priorityScore} / 100
               </strong>
             </div>
 
             <div>
               <span>Blocker</span>
-              <strong>
-                {selectedRepair.health.blocker}
-              </strong>
+              <strong>{selectedRepair.blocker}</strong>
             </div>
           </div>
 
           <div className="production-next-action">
             <span>Recommended next action</span>
-            <p>
-              {selectedRepair.health.nextAction}
-            </p>
+            <p>{selectedRepair.nextAction}</p>
             <small>
               Suggested owner:{" "}
-              {selectedRepair.health.suggestedOwner}
+              {selectedRepair.suggestedOwner}
             </small>
           </div>
 
-          <div className="production-intelligence-flags">
-            <span>
-              Active production:{" "}
-              {selectedRepair.isActiveProduction
-                ? "Yes"
-                : "No"}
-            </span>
-            <span>
-              Back ordered:{" "}
-              {selectedRepair.isBackOrderedParts
-                ? "Yes"
-                : "No"}
-            </span>
-            <span>
-              Production hold:{" "}
-              {selectedRepair.isProductionHold
-                ? "Yes"
-                : "No"}
-            </span>
-            <span>
-              Management attention:{" "}
-              {selectedRepair.needsManagementAttention
-                ? "Yes"
-                : "No"}
-            </span>
-          </div>
-
-          {selectedRepair.health.healthReasons.length >
-            0 && (
+          {selectedRepair.healthReasons.length > 0 && (
             <div className="production-score-reasons">
               <h4>Health score factors</h4>
 
-              {selectedRepair.health.healthReasons.map(
+              {selectedRepair.healthReasons.map(
                 (reason, index) => (
-                  <div
-                    key={`${reason.label}-${index}`}
-                  >
-                    <strong>
-                      {reason.points}
-                    </strong>
+                  <div key={`${reason.label}-${index}`}>
+                    <strong>{reason.points}</strong>
 
                     <p>
                       <span>{reason.label}</span>

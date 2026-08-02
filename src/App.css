@@ -2512,3 +2512,44 @@ button {
   }
 }
 
+
+/* PRODUCTION BOARD INTELLIGENCE MIGRATION V1 */
+
+.production-core-action {
+  margin: 10px 0 8px;
+  padding: 8px;
+  border-left: 3px solid #3b82f6;
+  border-radius: 8px;
+  background: rgba(37, 99, 235, 0.08);
+}
+
+.production-core-action span {
+  display: block;
+  color: #93c5fd;
+  font-size: 8px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.production-core-action p {
+  margin: 4px 0 0;
+  color: #cbd5e1;
+  font-size: 9px;
+  line-height: 1.4;
+}
+
+.production-intelligence-flags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  margin-top: 14px;
+}
+
+.production-intelligence-flags span {
+  padding: 6px 8px;
+  border-radius: 999px;
+  background: #0b1120;
+  color: #94a3b8;
+  font-size: 9px;
+}
+
