@@ -5,7 +5,7 @@ import WipIntelligence from "./WipIntelligence";
 import DailyReport from "./DailyReport";
 import MissionControl from "./MissionControl";
 import ProductionBoard from "./ProductionBoard";
-import OperationsEngineTest from "./OperationsEngineTest";
+import IntelligenceDiagnostics from "./IntelligenceDiagnostics";
 import WipCapacitySettings from "./WipCapacitySettings";
 import SchedulingBoard from "./SchedulingBoard";
 
@@ -93,7 +93,7 @@ function App() {
     }
 
     if (activePage === "KPIs") {
-      return <OperationsEngineTest />;
+      return <IntelligenceDiagnostics />;
     }
 
     if (activePage === "Administration") {
