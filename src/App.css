@@ -2610,3 +2610,316 @@ button {
   }
 }
 
+
+/* TECHNICIAN LOAD ENGINE V1 */
+
+.technician-load-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+  gap: 16px;
+  margin-bottom: 18px;
+}
+.technician-load-heading {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: flex-start;
+}
+.technician-load-heading h3 {
+  margin: 0;
+  color: #f8fafc;
+}
+.technician-utilization {
+  margin-top: 16px;
+}
+.technician-utilization > div:first-child {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+}
+.technician-utilization span {
+  color: #64748b;
+  font-size: 10px;
+  text-transform: uppercase;
+}
+.technician-utilization strong {
+  color: #f8fafc;
+  font-size: 13px;
+}
+.technician-utilization-track {
+  height: 8px;
+  margin-top: 8px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: #0b1120;
+}
+.technician-utilization-track span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: #3b82f6;
+}
+.technician-load-metrics {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 14px;
+}
+.technician-load-metrics div {
+  padding: 9px;
+  border-radius: 9px;
+  background: #0b1120;
+}
+.technician-load-metrics span,
+.technician-load-metrics strong {
+  display: block;
+}
+.technician-load-metrics span {
+  color: #64748b;
+  font-size: 9px;
+  text-transform: uppercase;
+}
+.technician-load-metrics strong {
+  margin-top: 4px;
+  color: #e5e7eb;
+  font-size: 11px;
+}
+.technician-detail-button {
+  width: 100%;
+  margin-top: 14px;
+}
+.technician-repair-detail {
+  margin-top: 18px;
+}
+.technician-repair-list {
+  display: grid;
+  gap: 9px;
+}
+.technician-repair-list article {
+  display: grid;
+  grid-template-columns: minmax(150px, 1fr) 90px 80px 120px 80px minmax(240px, 1.5fr);
+  gap: 12px;
+  align-items: start;
+  padding: 12px;
+  border-radius: 10px;
+  background: #0b1120;
+}
+.technician-repair-list strong,
+.technician-repair-list span {
+  display: block;
+}
+.technician-repair-list strong {
+  color: #f8fafc;
+  font-size: 11px;
+}
+.technician-repair-list span {
+  margin-bottom: 4px;
+  color: #64748b;
+  font-size: 9px;
+  text-transform: uppercase;
+}
+.technician-repair-list p {
+  margin: 0;
+  color: #94a3b8;
+  font-size: 10px;
+  line-height: 1.45;
+}
+@media (max-width: 850px) {
+  .technician-repair-list article {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .technician-repair-list p {
+    grid-column: 1 / -1;
+  }
+}
+@media (max-width: 600px) {
+  .technician-load-grid {
+    grid-template-columns: 1fr;
+  }
+  .technician-load-metrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+
+/* ESTIMATOR LOAD ENGINE V1 */
+
+.estimator-load-explainer {
+  margin-bottom: 18px;
+}
+
+.estimator-load-explainer span {
+  color: #93c5fd;
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.estimator-load-explainer p {
+  margin: 7px 0 0;
+  color: #94a3b8;
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+.estimator-load-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
+  gap: 16px;
+  margin-bottom: 18px;
+}
+
+.estimator-load-heading {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: flex-start;
+}
+
+.estimator-load-heading h3 {
+  margin: 0;
+  color: #f8fafc;
+}
+
+.estimator-workload-index {
+  margin-top: 16px;
+}
+
+.estimator-workload-index > div:first-child {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.estimator-workload-index span {
+  color: #64748b;
+  font-size: 10px;
+  text-transform: uppercase;
+}
+
+.estimator-workload-index strong {
+  color: #f8fafc;
+  font-size: 13px;
+}
+
+.estimator-workload-track {
+  height: 8px;
+  margin-top: 8px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: #0b1120;
+}
+
+.estimator-workload-track span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: #3b82f6;
+}
+
+.estimator-load-metrics {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.estimator-load-metrics div {
+  padding: 9px;
+  border-radius: 9px;
+  background: #0b1120;
+}
+
+.estimator-load-metrics span,
+.estimator-load-metrics strong {
+  display: block;
+}
+
+.estimator-load-metrics span {
+  color: #64748b;
+  font-size: 9px;
+  text-transform: uppercase;
+}
+
+.estimator-load-metrics strong {
+  margin-top: 4px;
+  color: #e5e7eb;
+  font-size: 11px;
+}
+
+.estimator-detail-button {
+  width: 100%;
+  margin-top: 14px;
+}
+
+.estimator-repair-detail {
+  margin-top: 18px;
+}
+
+.estimator-repair-list {
+  display: grid;
+  gap: 9px;
+}
+
+.estimator-repair-list article {
+  display: grid;
+  grid-template-columns:
+    minmax(145px, 1fr)
+    80px
+    55px
+    75px
+    90px
+    115px
+    75px
+    minmax(220px, 1.5fr);
+  gap: 12px;
+  align-items: start;
+  padding: 12px;
+  border-radius: 10px;
+  background: #0b1120;
+}
+
+.estimator-repair-list strong,
+.estimator-repair-list span {
+  display: block;
+}
+
+.estimator-repair-list strong {
+  color: #f8fafc;
+  font-size: 11px;
+}
+
+.estimator-repair-list span {
+  margin-bottom: 4px;
+  color: #64748b;
+  font-size: 9px;
+  text-transform: uppercase;
+}
+
+.estimator-repair-list p {
+  margin: 0;
+  color: #94a3b8;
+  font-size: 10px;
+  line-height: 1.45;
+}
+
+@media (max-width: 950px) {
+  .estimator-repair-list article {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .estimator-repair-list p {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 600px) {
+  .estimator-load-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .estimator-load-metrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+

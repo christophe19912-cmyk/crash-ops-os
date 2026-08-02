@@ -8,6 +8,7 @@ import ProductionBoard from "./ProductionBoard";
 import IntelligenceDiagnostics from "./IntelligenceDiagnostics";
 import WipCapacitySettings from "./WipCapacitySettings";
 import SchedulingBoard from "./SchedulingBoard";
+import EstimatorLoadDashboard from "./EstimatorLoadDashboard";
 
 type Page =
   | "Mission Control"
@@ -18,6 +19,7 @@ type Page =
   | "Scheduling"
   | "KPIs"
   | "Reports"
+  | "Estimator Load"
   | "Administration";
 
 
@@ -33,6 +35,7 @@ const navigationItems: Page[] = [
   "Production Board",
   "WIP Capacity",
   "Scheduling",
+  "Estimator Load",
   "KPIs",
   "Reports",
   "Administration",
@@ -94,6 +97,10 @@ function App() {
 
     if (activePage === "KPIs") {
       return <IntelligenceDiagnostics />;
+    }
+
+    if (activePage === "Estimator Load") {
+      return <EstimatorLoadDashboard />;
     }
 
     if (activePage === "Administration") {
