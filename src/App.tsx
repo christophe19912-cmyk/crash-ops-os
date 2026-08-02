@@ -1,9 +1,11 @@
 import { useMemo, useState } from "react";
 import "./App.css";
+import ImportCenter from "./ImportCenter";
 
 type Page =
   | "Dashboard"
   | "dAIly Report"
+  | "Import Center"
   | "Production Board"
   | "WIP Capacity"
   | "Scheduling"
@@ -37,6 +39,7 @@ type Recommendation = {
 const navigationItems: Page[] = [
   "Dashboard",
   "dAIly Report",
+  "Import Center",
   "Production Board",
   "WIP Capacity",
   "Scheduling",
@@ -449,6 +452,11 @@ function App() {
     if (activePage === "dAIly Report") {
       return <DailyReport />;
     }
+
+    if (activePage === "Import Center") {
+      return <ImportCenter />;
+    }
+
 
     return <PlaceholderPage title={activePage} />;
   }
