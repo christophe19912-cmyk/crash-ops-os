@@ -1224,3 +1224,266 @@ button {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
+
+.mission-source {
+  min-width: 220px;
+  padding: 12px 14px;
+  border: 1px solid #1f2937;
+  border-radius: 12px;
+  background: #0b1120;
+}
+
+.mission-source span,
+.mission-source strong,
+.mission-source small {
+  display: block;
+}
+
+.mission-source span {
+  color: #64748b;
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.mission-source strong {
+  margin-top: 5px;
+  color: #f8fafc;
+  font-size: 12px;
+}
+
+.mission-source small {
+  margin-top: 4px;
+  color: #94a3b8;
+}
+
+.mission-health-grid {
+  display: grid;
+  grid-template-columns:
+    minmax(260px, 1.3fr)
+    repeat(3, minmax(180px, 1fr));
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.mission-health-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+}
+
+.mission-health-card > p {
+  max-width: 300px;
+  margin: 0;
+  color: #94a3b8;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.mission-health-score {
+  display: flex;
+  align-items: baseline;
+  gap: 5px;
+  margin: 5px 0 10px;
+}
+
+.mission-health-score strong {
+  color: #f8fafc;
+  font-size: 46px;
+}
+
+.mission-health-score span {
+  color: #64748b;
+}
+
+.mission-alert-grid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 12px;
+  margin-bottom: 18px;
+}
+
+.mission-alert-card span {
+  color: #94a3b8;
+  font-size: 11px;
+}
+
+.mission-alert-card strong {
+  display: block;
+  margin-top: 7px;
+  color: #f8fafc;
+  font-size: 28px;
+}
+
+.mission-alert-card p {
+  margin: 7px 0 0;
+  color: #64748b;
+  font-size: 11px;
+  line-height: 1.45;
+}
+
+.mission-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.6fr) minmax(320px, 0.8fr);
+  gap: 18px;
+}
+
+.mission-priority-list {
+  display: grid;
+}
+
+.mission-priority-item {
+  display: grid;
+  grid-template-columns: 38px 1fr;
+  gap: 14px;
+  padding: 16px 0;
+  border-top: 1px solid #1f2937;
+}
+
+.mission-priority-item:first-child {
+  border-top: 0;
+}
+
+.mission-priority-number {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: #172554;
+  color: #93c5fd;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.mission-priority-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.mission-priority-heading strong,
+.mission-priority-heading span {
+  display: block;
+}
+
+.mission-priority-heading strong {
+  color: #f8fafc;
+}
+
+.mission-priority-heading div > span {
+  margin-top: 3px;
+  color: #94a3b8;
+  font-size: 12px;
+}
+
+.mission-priority-main > p {
+  margin: 10px 0;
+  color: #cbd5e1;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.mission-priority-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  margin-bottom: 8px;
+}
+
+.mission-priority-meta span {
+  padding: 4px 7px;
+  border-radius: 999px;
+  background: #0b1120;
+  color: #94a3b8;
+  font-size: 10px;
+}
+
+.mission-priority-main small {
+  color: #64748b;
+}
+
+.mission-shop-list {
+  display: grid;
+  gap: 10px;
+}
+
+.mission-shop-item {
+  padding: 13px;
+  border-radius: 11px;
+  background: #0b1120;
+}
+
+.mission-shop-item > div:first-child strong,
+.mission-shop-item > div:first-child span {
+  display: block;
+}
+
+.mission-shop-item > div:first-child strong {
+  color: #f8fafc;
+}
+
+.mission-shop-item > div:first-child span {
+  margin-top: 4px;
+  color: #64748b;
+  font-size: 11px;
+}
+
+.mission-shop-score {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 12px 0;
+}
+
+.mission-shop-score > strong {
+  color: #f8fafc;
+  font-size: 24px;
+}
+
+.mission-shop-flags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.mission-shop-flags span {
+  padding: 4px 7px;
+  border-radius: 999px;
+  background: #111827;
+  color: #94a3b8;
+  font-size: 9px;
+}
+
+@media (max-width: 1150px) {
+  .mission-health-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .mission-alert-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .mission-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 700px) {
+  .mission-health-grid,
+  .mission-alert-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .mission-health-card {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .mission-source {
+    min-width: 0;
+    width: 100%;
+  }
+}
