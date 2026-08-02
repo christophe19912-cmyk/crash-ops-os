@@ -1,0 +1,98 @@
+---
+description: Crash Ops OS architecture, layering, and development guardrails
+alwaysApply: true
+---
+
+# Crash Ops OS Architecture Rules
+
+## Read Before Significant Edits
+
+Before making non-trivial changes, read:
+
+- `docs/ARCHITECTURE.md`
+- `docs/BUSINESS_RULES.md`
+- `docs/DEVELOPMENT_WORKFLOW.md`
+
+For roadmap context, also read `docs/ROADMAP.md`.
+
+## Explain the Plan First
+
+Before editing code, briefly state:
+
+1. The operational problem being solved
+2. Which existing engine or service owns the logic
+3. Which files you plan to change and why
+
+Do not start editing until the plan is clear.
+
+## Layering Rules
+
+- React components (`src/*.tsx`) display information and collect user input only.
+- Business calculations live in reusable modules under `src/engine/` or `src/services/`.
+- Never duplicate repair-order normalization, capacity calculations, stage classification, scoring, or recommendation logic in page components.
+- Any new engine must remain independent of React (no React imports in `src/engine/` or engine-like services).
+
+## Shared Model and Single Sources of Truth
+
+| Concern | Owner |
+|---------|-------|
+| Repair order shape | `src/models/RepairOrder.ts` |
+| Stage meanings (C/HLD, BOP, PO, HOLD, etc.) | `src/services/stageDictionary.ts` |
+| Import normalization | `src/services/importedData.ts` |
+| Repair/shop health, risk, priority | `src/engine/operationsEngine.ts` |
+| Capacity status and thresholds | `src/engine/capacityEngine.ts` |
+| Five-day drop/severity planning | `src/engine/capacityPlanningEngine.ts` |
+| Operational recommendations | `src/services/recommendationEngine.ts` |
+| Store capacity settings | `src/services/capacitySettings.ts` |
+
+## Data and Navigation
+
+- Imported WIP and capacity settings are stored in browser `localStorage`.
+- Navigation is state-driven in `src/App.tsx` — there is no React Router.
+- Do not introduce routing libraries unless explicitly requested.
+
+## Quality Gates
+
+After code changes:
+
+1. Run `npm run build` and fix all TypeScript errors.
+2. Avoid unused imports and unused declarations.
+3. Report any assumptions or uncertain stage/import mappings.
+4. Summarize changed files and behavior.
+
+Commit only after the build succeeds and the user has visually validated the change.
+
+## Business Definition Guardrails
+
+Never silently change collision-repair business definitions, including:
+
+- C/HLD (completed repair awaiting pickup/authorization — excluded from active production WIP)
+- BOP (back-ordered parts)
+- PO (parts ordered)
+- Production hold semantics
+- Capacity statuses: Capture Keys, Healthy, Flow Delay, True Overload
+- Shop capacity setting meanings
+
+If code behavior conflicts with documented rules, flag the conflict instead of redefining the term.
+
+## Refactoring Discipline
+
+- Preserve existing working behavior while refactoring.
+- Prefer focused modules and components under roughly 300 lines when practical.
+- Do not rewrite large files unless necessary.
+- When extracting logic from a component, move it to the appropriate existing engine or service — do not create parallel implementations.
+
+## Intelligence Core Direction
+
+The future Crash Ops Intelligence Core will provide a unified snapshot consumed by all pages. Do not add new per-page recalculation of the same intelligence when a shared snapshot can be used. When building toward Intelligence Core v1, centralize evaluation — do not scatter duplicate engine calls across pages.
+
+## Known Alpha Gaps (Do Not Worsen)
+
+These exist today; document and plan fixes rather than duplicating the pattern:
+
+- Some pages recalculate engines independently instead of consuming a shared snapshot.
+- `WipIntelligence` and `WipCapacitySettings` include C/HLD in some WIP hour totals; capacity engines correctly exclude them.
+- `cleanNumber` and shop lists are duplicated between `ImportCenter.tsx` and service modules.
+- `ProductionBoard.tsx` hardcodes stage column mappings parallel to `stageDictionary.ts`.
+
+When touching these areas, prefer consolidating into the owning service/engine rather than adding a third copy.
