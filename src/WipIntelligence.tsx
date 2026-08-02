@@ -1,135 +1,22 @@
 import { useMemo, useState } from "react";
-import CapacityIntegrationPanel from "./CapacityIntegrationPanel";
 import type { RepairOrder } from "./models/RepairOrder";
+import { buildIntelligenceSnapshot } from "./engine/intelligence/intelligenceEngine";
 import {
-  daysSince,
   loadImportedWip,
   normalizeRepairOrders,
 } from "./services/importedData";
-import {
-  isProductionHold,
-} from "./services/stageDictionary";
+import { isProductionHold } from "./services/stageDictionary";
 
-type ShopSummary = {
-  shop: string;
-  repairOrders: RepairOrder[];
-  vehicles: number;
-  laborHours: number;
-  preTaxTotal: number;
-  averageLaborHours: number;
-  holds: number;
-  unassignedStages: number;
-  missingTechnicians: number;
-  averageDaysOnSite: number;
-  stageCounts: Record<string, number>;
-};
-
-
-
-function buildShopSummaries(
-  repairOrders: RepairOrder[],
-): ShopSummary[] {
-  const grouped = repairOrders.reduce<
-    Record<string, RepairOrder[]>
-  >((groups, repairOrder) => {
-    const key = repairOrder.shop || "Unknown";
-
-    if (!groups[key]) groups[key] = [];
-
-    groups[key].push(repairOrder);
-
-    return groups;
-  }, {});
-
-  return Object.entries(grouped)
-    .map(([shop, orders]) => {
-      const laborHours = orders.reduce(
-        (total, order) => total + order.laborHours,
-        0,
-      );
-
-      const preTaxTotal = orders.reduce(
-        (total, order) => total + order.preTaxTotal,
-        0,
-      );
-
-      const stageCounts = orders.reduce<Record<string, number>>(
-        (counts, order) => {
-          counts[order.stage] = (counts[order.stage] || 0) + 1;
-          return counts;
-        },
-        {},
-      );
-
-      const validAging = orders
-        .map((order) => daysSince(order.arrivalDate))
-        .filter((value): value is number => value !== null);
-
-      return {
-        shop,
-        repairOrders: orders,
-        vehicles: orders.length,
-        laborHours,
-        preTaxTotal,
-        averageLaborHours:
-          orders.length > 0 ? laborHours / orders.length : 0,
-        holds: orders.filter((order) => isProductionHold(order.stage))
-          .length,
-        unassignedStages: orders.filter(
-          (order) => order.stage === "Unassigned",
-        ).length,
-        missingTechnicians: orders.filter(
-          (order) => order.technician === "Unassigned",
-        ).length,
-        averageDaysOnSite:
-          validAging.length > 0
-            ? validAging.reduce(
-                (total, value) => total + value,
-                0,
-              ) / validAging.length
-            : 0,
-        stageCounts,
-      };
-    })
-    .sort((a, b) => b.laborHours - a.laborHours);
-}
-
-function getPressureStatus(summary: ShopSummary) {
-  const holdRate =
-    summary.vehicles > 0
-      ? summary.holds / summary.vehicles
-      : 0;
-
-  if (
-    summary.averageDaysOnSite >= 20 ||
-    holdRate >= 0.25
-  ) {
-    return {
-      label: "Immediate Attention",
-      className: "alert",
-      recommendation:
-        "Perform a same-day WIP walk and assign an owner to every held or aging repair.",
-    };
+function statusClass(status: string) {
+  if (status === "Low" || status === "Healthy" || status === "Capture Keys") {
+    return "good";
   }
 
-  if (
-    summary.averageDaysOnSite >= 12 ||
-    holdRate >= 0.12
-  ) {
-    return {
-      label: "Review Required",
-      className: "warning",
-      recommendation:
-        "Review aging repairs, holds, and technician assignments before adding more work.",
-    };
+  if (status === "Medium" || status === "Flow Delay") {
+    return "warning";
   }
 
-  return {
-    label: "Flow Stable",
-    className: "good",
-    recommendation:
-      "Maintain current flow and review available capacity before increasing scheduled starts.",
-  };
+  return "alert";
 }
 
 function buildTimeline(order: RepairOrder) {
@@ -154,10 +41,9 @@ function buildTimeline(order: RepairOrder) {
   events.push({
     label: `Current stage: ${order.stage}`,
     date: "Current",
-    detail:
-      isProductionHold(order.stage)
-        ? "This repair is currently identified as a hold."
-        : "This is the latest production stage in the imported report.",
+    detail: isProductionHold(order.stage)
+      ? "This repair is currently identified as a production hold."
+      : "This is the latest production stage in the imported report.",
   });
 
   if (order.completedDate) {
@@ -185,44 +71,57 @@ function WipIntelligence() {
     [importedRecord],
   );
 
-  const shopSummaries = useMemo(
-    () => buildShopSummaries(repairOrders),
+  const intelligence = useMemo(
+    () => buildIntelligenceSnapshot(repairOrders),
     [repairOrders],
   );
 
-  const visibleSummaries =
+  const visibleShops =
     selectedShop === "All Locations"
-      ? shopSummaries
-      : shopSummaries.filter(
-          (summary) => summary.shop === selectedShop,
+      ? intelligence.shops
+      : intelligence.shops.filter(
+          (shop) => shop.shop === selectedShop,
         );
 
-  const visibleOrders =
+  const visibleRepairs =
     selectedShop === "All Locations"
-      ? repairOrders
-      : repairOrders.filter(
-          (order) => order.shop === selectedShop,
+      ? intelligence.repairs
+      : intelligence.repairs.filter(
+          (repair) =>
+            repair.repairOrder.shop === selectedShop,
         );
 
-  const totalLaborHours = visibleOrders.reduce(
-    (total, order) => total + order.laborHours,
+
+  const activeRepairs = visibleRepairs.filter(
+    (repair) => repair.isActiveProduction,
+  );
+
+  const activeLaborHours = activeRepairs.reduce(
+    (total, repair) =>
+      total + repair.repairOrder.laborHours,
     0,
   );
 
-  const totalHolds = visibleOrders.filter((order) =>
-    isProductionHold(order.stage),
+  const productionHolds = visibleRepairs.filter(
+    (repair) => repair.isProductionHold,
   ).length;
 
-  const agingOrders = visibleOrders
-    .map((order) => ({
-      order,
-      days: daysSince(order.arrivalDate),
+  const completedHolds = visibleRepairs.filter(
+    (repair) => repair.isCompletedHold,
+  ).length;
+
+  const agingOrders = visibleRepairs
+    .map((repair) => ({
+      repair,
+      days: repair.health.daysOnSite,
     }))
     .filter(
       (
         item,
-      ): item is { order: RepairOrder; days: number } =>
-        item.days !== null,
+      ): item is {
+        repair: (typeof visibleRepairs)[number];
+        days: number;
+      } => item.days !== null,
     )
     .sort((a, b) => b.days - a.days);
 
@@ -231,10 +130,13 @@ function WipIntelligence() {
       <>
         <header className="topbar">
           <div>
-            <p className="eyebrow">WORKLOAD INTELLIGENCE</p>
+            <p className="eyebrow">
+              INTELLIGENCE CORE · WORKLOAD
+            </p>
             <h2>WIP Intelligence</h2>
             <p className="page-description">
-              Analyze imported Nexsyis repair-order data.
+              Analyze imported repair-order data through the shared
+              Crash Ops Intelligence Snapshot.
             </p>
           </div>
         </header>
@@ -243,7 +145,7 @@ function WipIntelligence() {
           <div className="ai-mark">WIP</div>
           <h3>No imported WIP report found</h3>
           <p>
-            Open Import Center, upload a Nexsyis WIP CSV, and select
+            Open Import Center, upload a WIP report, and select
             Apply Import.
           </p>
         </section>
@@ -255,11 +157,13 @@ function WipIntelligence() {
     <>
       <header className="topbar">
         <div>
-          <p className="eyebrow">IMPORTED OPERATIONS DATA</p>
+          <p className="eyebrow">
+            INTELLIGENCE CORE · WIP OPERATIONS
+          </p>
           <h2>WIP Intelligence</h2>
           <p className="page-description">
-            Analyze workload, holds, production stages, aging, and
-            repair-level operational risk.
+            Review active workload, capacity position, repair risk,
+            alerts, stages, and aging from one shared intelligence source.
           </p>
         </div>
 
@@ -274,9 +178,9 @@ function WipIntelligence() {
           >
             <option>All Locations</option>
 
-            {shopSummaries.map((summary) => (
-              <option key={summary.shop}>
-                {summary.shop}
+            {intelligence.shops.map((shop) => (
+              <option key={shop.shop} value={shop.shop}>
+                {shop.shop}
               </option>
             ))}
           </select>
@@ -285,25 +189,27 @@ function WipIntelligence() {
 
       <section className="cards">
         <article className="card">
-          <p>Vehicles On Site</p>
-          <strong>{visibleOrders.length}</strong>
-          <small>Imported active repair orders</small>
+          <p>Active Vehicles</p>
+          <strong>{activeRepairs.length}</strong>
+          <small>
+            {completedHolds} completed holds excluded
+          </small>
         </article>
 
         <article className="card">
-          <p>Labor Hours In Process</p>
+          <p>Active Labor Hours</p>
           <strong>
-            {totalLaborHours.toLocaleString(undefined, {
+            {activeLaborHours.toLocaleString(undefined, {
               maximumFractionDigits: 1,
             })}
           </strong>
-          <small>Total labor represented</small>
+          <small>Production workload from Intelligence Core</small>
         </article>
 
         <article className="card">
-          <p>Jobs On Hold</p>
-          <strong>{totalHolds}</strong>
-          <small>HOLD and C/HLD stages</small>
+          <p>Production Holds</p>
+          <strong>{productionHolds}</strong>
+          <small>Active HOLD conditions</small>
         </article>
 
         <article className="card">
@@ -313,163 +219,212 @@ function WipIntelligence() {
               ? `${agingOrders[0].days} days`
               : "Unknown"}
           </strong>
-          <small>
-            Based on valid arrival dates
-          </small>
+          <small>Based on valid arrival dates</small>
         </article>
       </section>
 
-      <CapacityIntegrationPanel
-        repairOrders={repairOrders}
-        selectedShop={selectedShop}
-        title="WIP Capacity Position"
-      />
-
-      <section className="wip-shop-grid">
-        {visibleSummaries.map((summary) => {
-          const pressure = getPressureStatus(summary);
-
-          return (
-            <article
-              className="panel wip-intelligence-card"
-              key={summary.shop}
-            >
-              <div className="wip-intelligence-header">
-                <div>
-                  <p className="section-label">SHOP WIP</p>
-                  <h3>{summary.shop}</h3>
-                </div>
-
-                <span
-                  className={`status ${pressure.className}`}
-                >
-                  {pressure.label}
-                </span>
+      <section className="wip-core-summary-grid">
+        {visibleShops.map((shop) => (
+          <article
+            className="panel wip-core-summary"
+            key={shop.shop}
+          >
+            <div className="wip-intelligence-header">
+              <div>
+                <p className="section-label">
+                  SHOP INTELLIGENCE
+                </p>
+                <h3>{shop.shop}</h3>
               </div>
 
-              <div className="wip-intelligence-metrics">
-                <div>
-                  <span>Vehicles</span>
-                  <strong>{summary.vehicles}</strong>
-                </div>
+              <span
+                className={`status ${statusClass(
+                  shop.overallRisk,
+                )}`}
+              >
+                {shop.overallRisk}
+              </span>
+            </div>
 
-                <div>
-                  <span>Labor Hours</span>
-                  <strong>
-                    {summary.laborHours.toFixed(1)}
-                  </strong>
-                </div>
-
-                <div>
-                  <span>Average RO Hours</span>
-                  <strong>
-                    {summary.averageLaborHours.toFixed(1)}
-                  </strong>
-                </div>
-
-                <div>
-                  <span>Average Days On Site</span>
-                  <strong>
-                    {summary.averageDaysOnSite.toFixed(1)}
-                  </strong>
-                </div>
-
-                <div>
-                  <span>Held Jobs</span>
-                  <strong>{summary.holds}</strong>
-                </div>
-
-                <div>
-                  <span>Missing Technician</span>
-                  <strong>
-                    {summary.missingTechnicians}
-                  </strong>
-                </div>
+            <div className="wip-intelligence-metrics">
+              <div>
+                <span>Shop Health</span>
+                <strong>{shop.health.healthScore}</strong>
               </div>
 
-              <div className="wip-recommendation">
-                <span>Recommended action</span>
-                <p>{pressure.recommendation}</p>
+              <div>
+                <span>Capacity Status</span>
+                <strong>{shop.capacity.status}</strong>
               </div>
 
-              <div className="stage-summary-list">
-                {Object.entries(summary.stageCounts)
-                  .sort((a, b) => b[1] - a[1])
-                  .map(([stage, count]) => (
-                    <div key={stage}>
-                      <span>{stage}</span>
-                      <strong>{count}</strong>
-                    </div>
-                  ))}
+              <div>
+                <span>Active Repairs</span>
+                <strong>{shop.activeRepairCount}</strong>
               </div>
-            </article>
-          );
-        })}
+
+              <div>
+                <span>Active Hours</span>
+                <strong>
+                  {shop.activeLaborHours.toFixed(1)}
+                </strong>
+              </div>
+
+              <div>
+                <span>Weeks to Clear</span>
+                <strong>{shop.capacity.weeksToClear}</strong>
+              </div>
+
+              <div>
+                <span>Load</span>
+                <strong>{shop.capacity.loadPercent}%</strong>
+              </div>
+
+              <div>
+                <span>Bay Pressure</span>
+                <strong>{shop.capacity.bayPressure}</strong>
+              </div>
+
+              <div>
+                <span>Weekly Drops</span>
+                <strong>
+                  {shop.capacityPlan.recommendedWeeklyDrops}
+                </strong>
+              </div>
+            </div>
+
+            <div className="wip-recommendation">
+              <span>Capacity recommendation</span>
+              <p>{shop.capacity.recommendation}</p>
+            </div>
+
+            <div className="wip-core-alerts">
+              {shop.alerts.length === 0 ? (
+                <p>No intelligence alerts were generated.</p>
+              ) : (
+                shop.alerts.map((alert) => (
+                  <div key={alert.id}>
+                    <span
+                      className={`status ${statusClass(
+                        alert.severity,
+                      )}`}
+                    >
+                      {alert.severity}
+                    </span>
+                    <section>
+                      <strong>{alert.title}</strong>
+                      <p>{alert.explanation}</p>
+                      <small>
+                        Next: {alert.recommendedAction}
+                      </small>
+                    </section>
+                  </div>
+                ))
+              )}
+            </div>
+          </article>
+        ))}
       </section>
 
       <section className="panel wip-repair-table-panel">
         <div className="panel-header">
           <div>
-            <p className="section-label">REPAIR-LEVEL ANALYSIS</p>
+            <p className="section-label">
+              REPAIR-LEVEL INTELLIGENCE
+            </p>
             <h3>Imported Repair Orders</h3>
           </div>
         </div>
 
         <div className="wip-repair-table-wrapper">
-          <div className="wip-repair-table">
+          <div className="wip-repair-table wip-core-table">
             <div className="wip-repair-row wip-repair-row-header">
               <span>RO</span>
               <span>Vehicle</span>
               <span>Stage</span>
-              <span>Days On Site</span>
-              <span>Labor Hours</span>
+              <span>Days</span>
+              <span>Labor</span>
+              <span>Health</span>
+              <span>Priority</span>
+              <span>Risk</span>
               <span>Technician</span>
-              <span>Estimator</span>
               <span>Action</span>
             </div>
 
-            {visibleOrders
+            {visibleRepairs
               .slice()
-              .sort(
-                (a, b) =>
-                  (daysSince(b.arrivalDate) || 0) -
-                  (daysSince(a.arrivalDate) || 0),
-              )
-              .map((order, index) => (
-                <div
-                  className="wip-repair-row"
-                  key={`${order.roNumber}-${index}`}
-                >
-                  <strong>{order.roNumber}</strong>
-                  <span>{order.vehicle}</span>
+              .sort((a, b) => {
+                const priorityDifference =
+                  b.health.priorityScore -
+                  a.health.priorityScore;
 
-                  <span
-                    className={
-                      isProductionHold(order.stage)
-                        ? "stage-hold"
-                        : ""
-                    }
+                if (priorityDifference !== 0) {
+                  return priorityDifference;
+                }
+
+                return (
+                  (b.health.daysOnSite || 0) -
+                  (a.health.daysOnSite || 0)
+                );
+              })
+              .map((repair, index) => {
+                const order = repair.repairOrder;
+
+                return (
+                  <div
+                    className="wip-repair-row"
+                    key={`${order.roNumber}-${index}`}
                   >
-                    {order.stage}
-                  </span>
+                    <strong>{order.roNumber}</strong>
+                    <span>{order.vehicle}</span>
 
-                  <span>
-                    {daysSince(order.arrivalDate) ?? "—"}
-                  </span>
+                    <span
+                      className={
+                        repair.isProductionHold
+                          ? "stage-hold"
+                          : ""
+                      }
+                    >
+                      {order.stage}
+                    </span>
 
-                  <span>{order.laborHours.toFixed(1)}</span>
-                  <span>{order.technician}</span>
-                  <span>{order.estimator}</span>
+                    <span>
+                      {repair.health.daysOnSite ?? "—"}
+                    </span>
 
-                  <button
-                    className="text-button"
-                    onClick={() => setSelectedOrder(order)}
-                    type="button"
-                  >
-                    View Timeline
-                  </button>
-                </div>
-              ))}
+                    <span>
+                      {order.laborHours.toFixed(1)}
+                    </span>
+
+                    <span>
+                      {repair.health.healthScore}
+                    </span>
+
+                    <span>
+                      {repair.health.priorityScore}
+                    </span>
+
+                    <span
+                      className={`status ${statusClass(
+                        repair.health.riskLevel,
+                      )}`}
+                    >
+                      {repair.health.riskLevel}
+                    </span>
+
+                    <span>{order.technician}</span>
+
+                    <button
+                      className="text-button"
+                      onClick={() =>
+                        setSelectedOrder(order)
+                      }
+                      type="button"
+                    >
+                      View Timeline
+                    </button>
+                  </div>
+                );
+              })}
           </div>
         </div>
       </section>
@@ -488,9 +443,9 @@ function WipIntelligence() {
               </h3>
 
               <p className="panel-description">
-                Current timeline derived from the imported Nexsyis
-                report. More detailed stage history will become
-                available when event-level data is integrated.
+                Current timeline derived from the imported report.
+                Event-level stage history will become available when
+                source-system event data is integrated.
               </p>
             </div>
 
