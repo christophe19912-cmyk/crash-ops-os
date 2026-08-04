@@ -10,6 +10,7 @@ import WipCapacitySettings from "./WipCapacitySettings";
 import SchedulingBoard from "./SchedulingBoard";
 import EstimatorLoadDashboard from "./EstimatorLoadDashboard";
 import EstimatorSettings from "./EstimatorSettings";
+import BetaSetup from "./BetaSetup";
 
 type Page =
   | "Mission Control"
@@ -22,6 +23,7 @@ type Page =
   | "Reports"
   | "Estimator Load"
   | "Estimator Settings"
+  | "Beta Setup"
   | "Administration";
 
 
@@ -41,6 +43,7 @@ const navigationItems: Page[] = [
   "KPIs",
   "Reports",
   "Estimator Settings",
+  "Beta Setup",
   "Administration",
 ];
 
@@ -108,6 +111,10 @@ function App() {
 
     if (activePage === "Estimator Settings") {
       return <EstimatorSettings />;
+    }
+
+    if (activePage === "Beta Setup") {
+      return <BetaSetup />;
     }
 
     if (activePage === "Administration") {
