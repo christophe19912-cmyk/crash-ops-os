@@ -11,6 +11,13 @@ import SchedulingBoard from "./SchedulingBoard";
 import EstimatorLoadDashboard from "./EstimatorLoadDashboard";
 import EstimatorSettings from "./EstimatorSettings";
 import BetaSetup from "./BetaSetup";
+import { useAuth } from "./auth/AuthProvider";
+import {
+  useApplicationContextStatus,
+  useOrganization,
+  useRole,
+  useUserProfile,
+} from "./auth/ApplicationContext";
 
 type Page =
   | "Mission Control"
@@ -77,8 +84,17 @@ function PlaceholderPage({ title }: { title: string }) {
 }
 
 function App() {
+  const { signOut } = useAuth();
+  const profile = useUserProfile();
+  const organization = useOrganization();
+  const role = useRole();
+  const contextStatus = useApplicationContextStatus();
   const [activePage, setActivePage] =
     useState<Page>("Mission Control");
+
+  const roleLabel = role
+    ? role.split("_").map((word) => word[0].toUpperCase() + word.slice(1)).join(" ")
+    : "Member";
 
   function renderPage() {
     if (activePage === "Mission Control") {
@@ -162,12 +178,20 @@ function App() {
         </nav>
 
         <div className="sidebar-footer">
-          <p>Crash Ops Consult LLC</p>
-          <span>Version 0.4</span>
+          <div className="workspace-identity">
+            <span className="workspace-avatar">{(profile?.full_name || profile?.email || "U").charAt(0).toUpperCase()}</span>
+            <div><p>{profile?.full_name || profile?.email || "Crash Ops User"}</p><span>{organization?.name || roleLabel}</span></div>
+          </div>
+          <button className="logout-button" onClick={() => void signOut()} type="button">Sign out</button>
+          <span className="version-label">Crash Ops OS · Beta</span>
         </div>
       </aside>
 
-      <main className="main">{renderPage()}</main>
+      <main className="main">
+        {contextStatus.loading && <div className="context-banner">Loading your organization…</div>}
+        {contextStatus.error && <div className="context-banner error">{contextStatus.error} Contact your administrator if this continues.</div>}
+        {renderPage()}
+      </main>
     </div>
   );
 }
