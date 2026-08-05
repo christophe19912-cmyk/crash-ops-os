@@ -28,13 +28,17 @@ export type Organization = {
   id: string;
   name: string;
   slug: string;
+  address: string | null;
+  phone: string | null;
+  website: string | null;
+  timezone: string;
   is_active: boolean;
 };
 
 const UserContext = createContext<UserProfile | null>(null);
 const OrganizationContext = createContext<Organization | null>(null);
 const RoleContext = createContext<AppRole | null>(null);
-const ContextStatus = createContext({ loading: false, error: "" });
+const ContextStatus = createContext({ loading: false, error: "", needsSetup: false, refresh: () => {} });
 
 export function ApplicationContextProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth();
@@ -42,6 +46,7 @@ export function ApplicationContextProvider({ children }: { children: ReactNode }
   const [organization, setOrganization] = useState<Organization | null>(null);
   const [loading, setLoading] = useState(Boolean(user));
   const [error, setError] = useState("");
+  const [refreshKey, setRefreshKey] = useState(0);
 
   useEffect(() => {
     let active = true;
@@ -60,7 +65,7 @@ export function ApplicationContextProvider({ children }: { children: ReactNode }
         .from("profiles")
         .select("id, organization_id, email, full_name, role, is_active")
         .eq("id", user.id)
-        .single<UserProfile>();
+        .maybeSingle<UserProfile>();
 
       if (!active) return;
       if (profileError) {
@@ -70,10 +75,10 @@ export function ApplicationContextProvider({ children }: { children: ReactNode }
       }
 
       setProfile(data);
-      if (data.organization_id) {
+      if (data?.organization_id) {
         const { data: org, error: orgError } = await supabase
           .from("organizations")
-          .select("id, name, slug, is_active")
+          .select("id, name, slug, address, phone, website, timezone, is_active")
           .eq("id", data.organization_id)
           .single<Organization>();
         if (!active) return;
@@ -86,9 +91,9 @@ export function ApplicationContextProvider({ children }: { children: ReactNode }
     return () => {
       active = false;
     };
-  }, [user]);
+  }, [refreshKey, user]);
 
-  const status = useMemo(() => ({ loading, error }), [error, loading]);
+  const status = useMemo(() => ({ loading, error, needsSetup: Boolean(user && !loading && (!profile || !profile.organization_id)), refresh: () => setRefreshKey((value) => value + 1) }), [error, loading, profile, user]);
 
   return (
     <ContextStatus.Provider value={status}>

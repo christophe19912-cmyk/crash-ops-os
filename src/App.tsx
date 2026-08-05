@@ -11,6 +11,7 @@ import SchedulingBoard from "./SchedulingBoard";
 import EstimatorLoadDashboard from "./EstimatorLoadDashboard";
 import EstimatorSettings from "./EstimatorSettings";
 import BetaSetup from "./BetaSetup";
+import OrganizationModule from "./OrganizationModule";
 import { useAuth } from "./auth/AuthProvider";
 import {
   useApplicationContextStatus,
@@ -31,7 +32,12 @@ type Page =
   | "Estimator Load"
   | "Estimator Settings"
   | "Beta Setup"
-  | "Administration";
+  | "Administration"
+  | "Organization Company"
+  | "Organization Centers"
+  | "Organization Users"
+  | "Organization Roles"
+  | "Organization Integrations";
 
 
 
@@ -52,6 +58,11 @@ const navigationItems: Page[] = [
   "Estimator Settings",
   "Beta Setup",
   "Administration",
+  "Organization Company",
+  "Organization Centers",
+  "Organization Users",
+  "Organization Roles",
+  "Organization Integrations",
 ];
 
 
@@ -141,6 +152,10 @@ function App() {
       return <SchedulingBoard />;
     }
 
+    if (activePage.startsWith("Organization ")) {
+      return <OrganizationModule page={activePage.replace("Organization ", "") as "Company" | "Centers" | "Users" | "Roles" | "Integrations"} />;
+    }
+
 
     return <PlaceholderPage title={activePage} />;
   }
@@ -158,7 +173,8 @@ function App() {
         </div>
 
         <nav className="navigation">
-          {navigationItems.map((item, index) => (
+          <div className="nav-section-label">Operations</div>
+          {navigationItems.slice(0, 12).map((item, index) => (
             <button
               className={
                 activePage === item
@@ -173,6 +189,18 @@ function App() {
                 {item === "dAIly Report" ? "AI" : index + 1}
               </span>
               <span>{item}</span>
+            </button>
+          ))}
+          <div className="nav-section-label">Organization</div>
+          {navigationItems.slice(12).map((item, index) => (
+            <button
+              className={activePage === item ? "nav-button active" : "nav-button"}
+              key={item}
+              onClick={() => setActivePage(item)}
+              type="button"
+            >
+              <span className="nav-icon">O{index + 1}</span>
+              <span>{item.replace("Organization ", "")}</span>
             </button>
           ))}
         </nav>
