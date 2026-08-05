@@ -48,7 +48,7 @@ function BetaSetup() {
 
       setConnectionState("Connected");
       setConnectionMessage(
-        "The browser client can reach the Supabase project. Authentication is not enabled in the app yet.",
+        "The browser client can reach the Supabase project and authentication is ready.",
       );
     }
 
@@ -160,7 +160,7 @@ function BetaSetup() {
             </section>
           </div>
 
-          <div>
+          <div className="complete">
             <span>1B</span>
             <section>
               <strong>
@@ -173,7 +173,7 @@ function BetaSetup() {
             </section>
           </div>
 
-          <div>
+          <div className="complete">
             <span>1C</span>
             <section>
               <strong>

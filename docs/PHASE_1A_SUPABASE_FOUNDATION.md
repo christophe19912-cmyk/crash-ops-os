@@ -1,4 +1,4 @@
-# Phase 1A — Supabase Foundation
+# Phase 1 — Beta Foundation
 
 ## Added
 
@@ -13,6 +13,9 @@
 - Capacity and estimator settings
 - Scheduled drops
 - Row Level Security policies
+- Password sign-in, reset, session restoration, and logout
+- Protected application shell and missing-configuration screen
+- Authenticated user, organization, and role contexts
 
 ## Setup
 
@@ -22,7 +25,19 @@
 3. Copy `.env.example` to `.env.local`.
 4. Add the project URL and publishable key.
 5. Restart the Vite development server.
-6. Open **Beta Setup** in Crash Ops OS.
+6. Sign in with a Supabase Auth user and open **Beta Setup**.
+
+## Application access
+
+`AuthProvider` is the single owner of the Supabase session and
+subscribes to authentication state changes. The application shell
+is not mounted until a persisted session is restored. Password
+recovery links switch the auth screen into password-update mode.
+
+After authentication, `ApplicationContextProvider` loads the user's
+`profiles` row and associated `organizations` row. It exposes focused
+user, organization, and role hooks to the application without changing
+any operational intelligence or production workflows.
 
 ## Security
 
@@ -31,7 +46,5 @@ when RLS is enabled and policies are correct. Never expose the
 service-role key in the browser, Vite variables, GitHub, or a
 public deployment.
 
-## Next
-
-Phase 1B will add password authentication, password reset,
-session restoration, logout, and protected application access.
+If either browser credential is absent, Crash Ops OS renders a safe
+configuration screen rather than creating a partial Supabase client.
