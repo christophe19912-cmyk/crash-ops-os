@@ -3228,3 +3228,19 @@ button {
 .leadership-drawer textarea { border: 1px solid #cbd5e1; border-radius: 12px; box-sizing: border-box; margin: 1rem 0; min-height: 90px; padding: 0.75rem; width: 100%; }
 @media (max-width: 1000px) { .leadership-metrics { grid-template-columns: repeat(2, 1fr); } .leadership-filters { grid-template-columns: repeat(3, 1fr); } }
 @media (max-width: 650px) { .leadership-metrics, .leadership-filters, .timeline-columns { grid-template-columns: 1fr; } }
+
+/* ACTION AUTOMATION */
+.automation-results { display: grid; gap: 1rem; grid-template-columns: repeat(3, 1fr); margin-bottom: 1rem; }
+.automation-rules { display: grid; gap: 0.75rem; }
+.automation-rules > div { align-items: end; border-bottom: 1px solid #e2e8f0; display: grid; gap: 0.75rem; grid-template-columns: 0.8fr 1fr 1fr 0.8fr auto; padding: 0.75rem 0; }
+.automation-rules strong { text-transform: capitalize; }
+.automation-rules label { color: #64748b; display: grid; font-size: 0.72rem; font-weight: 800; gap: 0.3rem; text-transform: uppercase; }
+.automation-rules input[type="number"] { border: 1px solid #cbd5e1; border-radius: 9px; padding: 0.55rem; }
+.automation-toggle { align-items: center; display: flex !important; }
+.automation-grid { display: grid; gap: 1rem; grid-template-columns: 1fr 1fr; margin-top: 1rem; }
+.brief-list, .notification-list { display: grid; gap: 0.65rem; }
+.brief-list article, .notification-list article { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 0.75rem; }
+.brief-list article > div, .notification-list article { align-items: start; display: flex; justify-content: space-between; }
+.brief-list span, .notification-list span { color: #64748b; font-size: 0.72rem; }
+.notification-list article.read { opacity: 0.65; }
+@media (max-width: 800px) { .automation-results, .automation-grid, .automation-rules > div { grid-template-columns: 1fr; } }
