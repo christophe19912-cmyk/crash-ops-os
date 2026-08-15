@@ -43,10 +43,6 @@ export async function loadLeadershipData(): Promise<{
   actionEvents: ActionEventSummary[];
 }> {
   const client = requireClient();
-  const { error: escalationError } = await client.from("action_items")
-    .update({ status: "missed" }).in("status", ["open", "in_progress"])
-    .lt("due_at", new Date().toISOString());
-  if (escalationError) throw escalationError;
   const [actionsResult, shopsResult, usersResult, repairsResult, eventsResult] = await Promise.all([
     client.from("action_items").select("id, organization_id, shop_id, repair_order_id, title, description, action_type, priority, assigned_to, source, due_at, status, created_at, updated_at, completed_at, dismissal_reason, metadata").order("created_at", { ascending: false }).returns<LeadershipAction[]>(),
     client.from("shops").select("id, name").order("name").returns<ShopOption[]>(),
