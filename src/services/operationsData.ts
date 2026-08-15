@@ -93,10 +93,6 @@ export async function syncRecommendationActions(recommendations: OperationalReco
 
 export async function loadActionItems(statuses?: ActionStatus[]): Promise<ActionItem[]> {
   if (!supabase) return [];
-  const now = new Date().toISOString();
-  const { error: missedError } = await supabase.from("action_items")
-    .update({ status: "missed" }).in("status", ["open", "in_progress"]).lt("due_at", now);
-  if (missedError) throw missedError;
   let query = supabase.from("action_items").select("id, shop_id, source_key, title, description, action_type, priority, assigned_to, source, due_at, status, completed_at, dismissal_reason, metadata")
     .order("created_at", { ascending: false });
   if (statuses?.length) query = query.in("status", statuses);
