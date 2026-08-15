@@ -1,5 +1,7 @@
 import { useMemo, useRef, useState } from "react";
 import Papa from "papaparse";
+import { SHOP_OPTIONS } from "./services/capacitySettings";
+import { cleanNumber } from "./services/importedData";
 
 type NexsyisRow = {
   "Loc Code": string;
@@ -23,14 +25,6 @@ type ImportIssue = {
   message: string;
 };
 
-const shopOptions = [
-  "Monroeville",
-  "Greensburg",
-  "North Hills",
-  "North Huntingdon",
-  "Canonsburg",
-];
-
 const requiredColumns: (keyof NexsyisRow)[] = [
   "Loc Code",
   "Folder",
@@ -47,15 +41,6 @@ const requiredColumns: (keyof NexsyisRow)[] = [
   "Arrival Date",
   "Completed Date",
 ];
-
-function cleanNumber(value: string | undefined) {
-  if (!value) return 0;
-
-  const cleaned = String(value).replace(/[$,%\s,]/g, "");
-  const parsed = Number(cleaned);
-
-  return Number.isFinite(parsed) ? parsed : 0;
-}
 
 function ImportCenter() {
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -286,7 +271,7 @@ const [selectedShop, setSelectedShop] =
       }
       value={selectedShop}
     >
-      {shopOptions.map((shop) => (
+      {SHOP_OPTIONS.map((shop) => (
         <option key={shop} value={shop}>
           {shop}
         </option>

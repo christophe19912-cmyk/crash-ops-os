@@ -7,6 +7,7 @@ import {
   normalizeRepairOrders,
 } from "./services/importedData";
 import {
+  isCompletedHold,
   isProductionHold,
 } from "./services/stageDictionary";
 
@@ -43,12 +44,16 @@ function buildShopSummaries(
 
   return Object.entries(grouped)
     .map(([shop, orders]) => {
-      const laborHours = orders.reduce(
+      const activeOrders = orders.filter(
+        (order) => !isCompletedHold(order.stage),
+      );
+
+      const laborHours = activeOrders.reduce(
         (total, order) => total + order.laborHours,
         0,
       );
 
-      const preTaxTotal = orders.reduce(
+      const preTaxTotal = activeOrders.reduce(
         (total, order) => total + order.preTaxTotal,
         0,
       );
@@ -61,24 +66,24 @@ function buildShopSummaries(
         {},
       );
 
-      const validAging = orders
+      const validAging = activeOrders
         .map((order) => daysSince(order.arrivalDate))
         .filter((value): value is number => value !== null);
 
       return {
         shop,
         repairOrders: orders,
-        vehicles: orders.length,
+        vehicles: activeOrders.length,
         laborHours,
         preTaxTotal,
         averageLaborHours:
-          orders.length > 0 ? laborHours / orders.length : 0,
-        holds: orders.filter((order) => isProductionHold(order.stage))
+          activeOrders.length > 0 ? laborHours / activeOrders.length : 0,
+        holds: activeOrders.filter((order) => isProductionHold(order.stage))
           .length,
-        unassignedStages: orders.filter(
+        unassignedStages: activeOrders.filter(
           (order) => order.stage === "Unassigned",
         ).length,
-        missingTechnicians: orders.filter(
+        missingTechnicians: activeOrders.filter(
           (order) => order.technician === "Unassigned",
         ).length,
         averageDaysOnSite:
