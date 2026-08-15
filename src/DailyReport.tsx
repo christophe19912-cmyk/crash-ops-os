@@ -1,9 +1,16 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { buildIntelligenceSnapshot } from "./engine/intelligence";
 import {
   loadImportedWip,
   normalizeRepairOrders,
 } from "./services/importedData";
+import {
+  loadActionItems,
+  syncRecommendationActions,
+  updateActionItem,
+  type ActionItem,
+  type ActionStatus,
+} from "./services/operationsData";
 
 function priorityClass(priority: string) {
   return priority.toLowerCase();
@@ -38,9 +45,13 @@ function DailyReport() {
 
   const [generated, setGenerated] = useState(false);
 
-  const [completedIds, setCompletedIds] = useState<string[]>(
-    [],
-  );
+  const [actionItems, setActionItems] = useState<ActionItem[]>([]);
+  const [actionStatus, setActionStatus] = useState<ActionStatus | "active" | "all">("active");
+  const [actionError, setActionError] = useState("");
+
+  useEffect(() => {
+    void refreshActions();
+  }, []);
 
   const visibleShops =
     selectedShop === "All Locations"
@@ -95,12 +106,34 @@ function DailyReport() {
     0,
   );
 
-  function toggleComplete(id: string) {
-    setCompletedIds((current) =>
-      current.includes(id)
-        ? current.filter((item) => item !== id)
-        : [...current, id],
-    );
+  async function refreshActions() {
+    try {
+      setActionItems(await loadActionItems());
+      setActionError("");
+    } catch (error: unknown) {
+      setActionError(error instanceof Error ? error.message : "Action items could not be loaded.");
+    }
+  }
+
+  async function generateReport() {
+    setGenerated(true);
+    try {
+      await syncRecommendationActions(recommendations);
+      await refreshActions();
+    } catch (error: unknown) {
+      setActionError(error instanceof Error ? error.message : "Action items could not be synchronized.");
+    }
+  }
+
+  async function transitionAction(item: ActionItem, status: ActionStatus) {
+    const reason = status === "dismissed" ? window.prompt("Why is this action being dismissed?") : undefined;
+    if (status === "dismissed" && !reason) return;
+    try {
+      await updateActionItem(item.id, status, reason ?? undefined);
+      await refreshActions();
+    } catch (error: unknown) {
+      setActionError(error instanceof Error ? error.message : "The action could not be updated.");
+    }
   }
 
   if (!importedRecord || repairOrders.length === 0) {
@@ -157,7 +190,6 @@ function DailyReport() {
             onChange={(event) => {
               setSelectedShop(event.target.value);
               setGenerated(false);
-              setCompletedIds([]);
             }}
             value={selectedShop}
           >
@@ -172,7 +204,7 @@ function DailyReport() {
 
           <button
             className="primary-button"
-            onClick={() => setGenerated(true)}
+            onClick={() => void generateReport()}
             type="button"
           >
             Generate dAIly Report
@@ -241,14 +273,7 @@ function DailyReport() {
               <span>Tasks completed</span>
 
               <strong>
-                {
-                  completedIds.filter((id) =>
-                    recommendations.some(
-                      (recommendation) =>
-                        recommendation.id === id,
-                    ),
-                  ).length
-                }{" "}
+                {actionItems.filter((item) => item.status === "completed" && recommendations.some((recommendation) => recommendation.id === item.source_key)).length}{" "}
                 / {recommendations.length}
               </strong>
             </article>
@@ -369,6 +394,14 @@ function DailyReport() {
             </div>
           </section>
 
+          {actionError && <section className="panel import-error"><strong>Action history unavailable</strong><p>{actionError}</p></section>}
+
+          <section className="panel daily-source-banner">
+            <div><span>Action view</span><select className="report-selector" value={actionStatus} onChange={(event) => setActionStatus(event.target.value as ActionStatus | "active" | "all")}><option value="active">Open & in progress</option><option value="all">All actions</option><option value="completed">Completed</option><option value="dismissed">Dismissed</option><option value="missed">Missed</option></select></div>
+            <div><span>Missed actions</span><strong>{actionItems.filter((item) => item.status === "missed").length}</strong></div>
+            <div><span>Dismissed (not missed)</span><strong>{actionItems.filter((item) => item.status === "dismissed").length}</strong></div>
+          </section>
+
           {recommendations.length === 0 ? (
             <section className="panel daily-empty">
               <div className="ai-mark">AI</div>
@@ -383,9 +416,10 @@ function DailyReport() {
           ) : (
             <section className="daily-task-list">
               {recommendations.map((recommendation) => {
-                const completed = completedIds.includes(
-                  recommendation.id,
-                );
+                const action = actionItems.find((item) => item.source_key === recommendation.id);
+                const completed = action?.status === "completed";
+                const visible = actionStatus === "all" || (actionStatus === "active" && (!action || action.status === "open" || action.status === "in_progress")) || action?.status === actionStatus;
+                if (!visible) return null;
 
                 return (
                   <article
@@ -415,17 +449,13 @@ function DailyReport() {
                         </span>
                       </div>
 
-                      <label className="complete-control">
-                        <input
-                          checked={completed}
-                          onChange={() =>
-                            toggleComplete(recommendation.id)
-                          }
-                          type="checkbox"
-                        />
-
-                        Complete
-                      </label>
+                      <div className="header-actions">
+                        {action && action.status === "open" && <button className="secondary-button" onClick={() => void transitionAction(action, "in_progress")} type="button">Start</button>}
+                        {action && action.status !== "completed" && action.status !== "dismissed" && <button className="primary-button" onClick={() => void transitionAction(action, "completed")} type="button">Complete</button>}
+                        {action && action.status !== "dismissed" && action.status !== "completed" && <button className="secondary-button" onClick={() => void transitionAction(action, "dismissed")} type="button">Dismiss</button>}
+                        {action && (action.status === "completed" || action.status === "dismissed" || action.status === "missed") && <button className="secondary-button" onClick={() => void transitionAction(action, "open")} type="button">Reopen</button>}
+                        <span className="shop-badge">{action?.status.replace("_", " ") ?? "not synced"}</span>
+                      </div>
                     </div>
 
                     <h3>{recommendation.title}</h3>
