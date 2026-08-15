@@ -13,6 +13,7 @@ import EstimatorSettings from "./EstimatorSettings";
 import BetaSetup from "./BetaSetup";
 import OrganizationModule from "./OrganizationModule";
 import LeadershipDashboard from "./LeadershipDashboard";
+import AutomationCenter from "./AutomationCenter";
 import { useAuth } from "./auth/AuthProvider";
 import {
   useApplicationContextStatus,
@@ -25,6 +26,7 @@ type Page =
   | "Mission Control"
   | "dAIly Report"
   | "Leadership"
+  | "Automation"
   | "Import Center"
   | "Production Board"
   | "WIP Capacity"
@@ -51,6 +53,7 @@ const navigationItems: Page[] = [
   "Mission Control",
   "dAIly Report",
   "Leadership",
+  "Automation",
   "Import Center",
   "Production Board",
   "WIP Capacity",
@@ -123,6 +126,10 @@ function App() {
       return <LeadershipDashboard />;
     }
 
+    if (activePage === "Automation") {
+      return <AutomationCenter />;
+    }
+
     if (activePage === "Production Board") {
       return <ProductionBoard />;
     }
@@ -181,7 +188,7 @@ function App() {
 
         <nav className="navigation">
           <div className="nav-section-label">Operations</div>
-          {navigationItems.slice(0, 13).map((item, index) => (
+          {navigationItems.slice(0, 14).map((item, index) => (
             <button
               className={
                 activePage === item
@@ -199,7 +206,7 @@ function App() {
             </button>
           ))}
           <div className="nav-section-label">Organization</div>
-          {navigationItems.slice(13).map((item, index) => (
+          {navigationItems.slice(14).map((item, index) => (
             <button
               className={activePage === item ? "nav-button active" : "nav-button"}
               key={item}
