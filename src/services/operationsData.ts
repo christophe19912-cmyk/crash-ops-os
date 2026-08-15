@@ -71,8 +71,15 @@ export async function syncRecommendationActions(recommendations: OperationalReco
   recommendations.forEach((item) => groups.set(item.shop, [...(groups.get(item.shop) ?? []), item]));
   for (const [shopName, items] of groups) {
     const context = await tenantContext(shopName);
+    const roNumbers = items.map((item) => item.roNumber);
+    const { data: repairs, error: repairsError } = await supabase.from("repair_orders")
+      .select("id, ro_number").eq("shop_id", context.shopId).in("ro_number", roNumbers)
+      .returns<Array<{ id: string; ro_number: string }>>();
+    if (repairsError) throw repairsError;
+    const repairIds = new Map((repairs ?? []).map((repair) => [repair.ro_number, repair.id]));
     const payload = items.map((item) => ({
       organization_id: context.organizationId, shop_id: context.shopId, source_key: item.id,
+      repair_order_id: repairIds.get(item.roNumber) ?? null,
       title: item.title, description: item.action, action_type: item.blocker,
       priority: item.priority.toLowerCase(), source: "intelligence_core", created_by: context.user.id,
       metadata: { roNumber: item.roNumber, vehicle: item.vehicle, stage: item.stage, reason: item.reason, owner: item.owner },
