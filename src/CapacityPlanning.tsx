@@ -5,7 +5,7 @@ import {
   getCapacitySettings,
 } from "./services/capacitySettings";
 import {
-  loadImportedWip,
+  useImportedWip,
   normalizeRepairOrders,
 } from "./services/importedData";
 
@@ -17,7 +17,7 @@ function statusClass(status: string) {
 }
 
 function CapacityPlanning() {
-  const importedRecord = useMemo(loadImportedWip, []);
+  const importedRecord = useImportedWip();
 
   const repairOrders = useMemo(
     () => normalizeRepairOrders(importedRecord),
