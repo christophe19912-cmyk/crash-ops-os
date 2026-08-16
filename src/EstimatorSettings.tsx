@@ -8,7 +8,7 @@ import {
   upsertEstimatorSettings,
 } from "./services/estimatorSettings";
 import {
-  loadImportedWip,
+  useImportedWip,
   normalizeRepairOrders,
 } from "./services/importedData";
 
@@ -28,10 +28,7 @@ function normalizeEstimator(name: string) {
 }
 
 function EstimatorSettings() {
-  const importedRecord = useMemo(
-    loadImportedWip,
-    [],
-  );
+  const importedRecord = useImportedWip();
 
   const repairOrders = useMemo(
     () => normalizeRepairOrders(importedRecord),

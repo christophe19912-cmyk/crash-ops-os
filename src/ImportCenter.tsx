@@ -4,6 +4,7 @@ import { SHOP_OPTIONS } from "./services/capacitySettings";
 import {
   cleanNumber,
   normalizeRepairOrders,
+  saveImportedWip,
 } from "./services/importedData";
 import { persistWipImport } from "./services/operationsData";
 import {
@@ -189,10 +190,7 @@ const [selectedShop, setSelectedShop] =
   })),
 };
 
-    localStorage.setItem(
-      "crashOpsLastWipImport",
-      JSON.stringify(importRecord),
-    );
+    saveImportedWip(importRecord);
 
     setImportApplied(true);
     try {

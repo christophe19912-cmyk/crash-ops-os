@@ -8,7 +8,7 @@ import {
   saveCapacitySettings,
 } from "./services/capacitySettings";
 import {
-  loadImportedWip,
+  useImportedWip,
   normalizeRepairOrders,
 } from "./services/importedData";
 import "./WipCapacitySettings.css";
@@ -19,7 +19,7 @@ type NumericSettingKey = Exclude<
 >;
 
 function WipCapacitySettings() {
-  const importedRecord = useMemo(loadImportedWip, []);
+  const importedRecord = useImportedWip();
 
   const importedOrders = useMemo(
     () => normalizeRepairOrders(importedRecord),

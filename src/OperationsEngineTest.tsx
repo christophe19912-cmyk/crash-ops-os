@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 import {
-  loadImportedWip,
+  useImportedWip,
   normalizeRepairOrders,
 } from "./services/importedData";
 import {
@@ -15,7 +15,7 @@ function riskClass(risk: string) {
 }
 
 function OperationsEngineTest() {
-  const importedRecord = useMemo(loadImportedWip, []);
+  const importedRecord = useImportedWip();
 
   const repairOrders = useMemo(
     () => normalizeRepairOrders(importedRecord),
