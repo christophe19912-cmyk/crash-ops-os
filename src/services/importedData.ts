@@ -43,7 +43,10 @@ export function normalizeRepairOrders(
     laborHours: cleanNumber(row["Total Labor Hours"]),
     preTaxTotal: cleanNumber(row["Pre Tax Total"]),
     estimator: row["Sales Resource"]?.trim() || "Unassigned",
-    technician: row["Service Resource"]?.trim() || "Unassigned",
+    technician:
+      row["Crash Ops Technician"]?.trim() ||
+      row["Service Resource"]?.trim() ||
+      "Unassigned",
     insurance: row.Insurance?.trim() || "Unknown",
     createdDate: row["Created Date"]?.trim() || "",
     arrivalDate: row["Arrival Date"]?.trim() || "",

@@ -179,11 +179,13 @@ function buildTimeline(order: RepairOrder) {
 function WipIntelligence() {
   const [selectedShop, setSelectedShop] =
     useState("All Locations");
+  const [selectedTechnician, setSelectedTechnician] =
+    useState("All Technicians");
 
   const [selectedOrder, setSelectedOrder] =
     useState<RepairOrder | null>(null);
 
-  const importedRecord = useMemo(loadImportedWip, []);
+  const importedRecord = useMemo(() => loadImportedWip(), []);
 
   const repairOrders = useMemo(
     () => normalizeRepairOrders(importedRecord),
@@ -202,11 +204,43 @@ function WipIntelligence() {
           (summary) => summary.shop === selectedShop,
         );
 
+  const shopOrders = useMemo(
+    () =>
+      selectedShop === "All Locations"
+        ? repairOrders
+        : repairOrders.filter(
+            (order) => order.shop === selectedShop,
+          ),
+    [repairOrders, selectedShop],
+  );
+
+  const technicianSummaries = useMemo(() => {
+    const grouped = shopOrders.reduce<
+      Record<string, RepairOrder[]>
+    >((groups, order) => {
+      const technician = order.technician || "Unassigned";
+      if (!groups[technician]) groups[technician] = [];
+      groups[technician].push(order);
+      return groups;
+    }, {});
+
+    return Object.entries(grouped)
+      .map(([technician, orders]) => ({
+        technician,
+        jobs: orders.length,
+        laborHours: orders.reduce(
+          (total, order) => total + order.laborHours,
+          0,
+        ),
+      }))
+      .sort((a, b) => b.laborHours - a.laborHours);
+  }, [shopOrders]);
+
   const visibleOrders =
-    selectedShop === "All Locations"
-      ? repairOrders
-      : repairOrders.filter(
-          (order) => order.shop === selectedShop,
+    selectedTechnician === "All Technicians"
+      ? shopOrders
+      : shopOrders.filter(
+          (order) => order.technician === selectedTechnician,
         );
 
   const totalLaborHours = visibleOrders.reduce(
@@ -273,6 +307,7 @@ function WipIntelligence() {
             className="report-selector"
             onChange={(event) => {
               setSelectedShop(event.target.value);
+              setSelectedTechnician("All Technicians");
               setSelectedOrder(null);
             }}
             value={selectedShop}
@@ -282,6 +317,23 @@ function WipIntelligence() {
             {shopSummaries.map((summary) => (
               <option key={summary.shop}>
                 {summary.shop}
+              </option>
+            ))}
+          </select>
+
+          <select
+            className="report-selector"
+            onChange={(event) => {
+              setSelectedTechnician(event.target.value);
+              setSelectedOrder(null);
+            }}
+            value={selectedTechnician}
+          >
+            <option>All Technicians</option>
+
+            {technicianSummaries.map((summary) => (
+              <option key={summary.technician}>
+                {summary.technician}
               </option>
             ))}
           </select>
@@ -329,6 +381,27 @@ function WipIntelligence() {
         selectedShop={selectedShop}
         title="WIP Capacity Position"
       />
+
+      <section className="panel">
+        <div className="panel-header">
+          <div>
+            <p className="section-label">TECHNICIAN LOAD</p>
+            <h3>Assigned WIP by Body Technician</h3>
+          </div>
+        </div>
+
+        <div className="stage-summary-list">
+          {technicianSummaries.map((summary) => (
+            <div key={summary.technician}>
+              <span>
+                {summary.technician} · {summary.jobs} job
+                {summary.jobs === 1 ? "" : "s"}
+              </span>
+              <strong>{summary.laborHours.toFixed(1)} hrs</strong>
+            </div>
+          ))}
+        </div>
+      </section>
 
       <section className="wip-shop-grid">
         {visibleSummaries.map((summary) => {
