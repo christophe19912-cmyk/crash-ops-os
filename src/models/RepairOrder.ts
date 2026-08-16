@@ -20,5 +20,6 @@ export type ImportedWipRecord = {
   fileName: string;
   importedAt: string;
   rowCount: number;
+  selectedShop?: string;
   rows: Record<string, string>[];
 };

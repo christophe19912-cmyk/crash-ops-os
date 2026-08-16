@@ -5,20 +5,41 @@ import WipIntelligence from "./WipIntelligence";
 import DailyReport from "./DailyReport";
 import MissionControl from "./MissionControl";
 import ProductionBoard from "./ProductionBoard";
-import OperationsEngineTest from "./OperationsEngineTest";
+import IntelligenceDiagnostics from "./IntelligenceDiagnostics";
 import WipCapacitySettings from "./WipCapacitySettings";
-import CapacityPlanning from "./CapacityPlanning";
+import SchedulingBoard from "./SchedulingBoard";
+import EstimatorLoadDashboard from "./EstimatorLoadDashboard";
+import EstimatorSettings from "./EstimatorSettings";
+import BetaSetup from "./BetaSetup";
+import OrganizationModule from "./OrganizationModule";
+import LeadershipDashboard from "./LeadershipDashboard";
+import { useAuth } from "./auth/AuthProvider";
+import {
+  useApplicationContextStatus,
+  useOrganization,
+  useRole,
+  useUserProfile,
+} from "./auth/ApplicationContext";
 
 type Page =
   | "Mission Control"
   | "dAIly Report"
+  | "Leadership"
   | "Import Center"
   | "Production Board"
   | "WIP Capacity"
   | "Scheduling"
   | "KPIs"
   | "Reports"
-  | "Administration";
+  | "Estimator Load"
+  | "Estimator Settings"
+  | "Beta Setup"
+  | "Administration"
+  | "Organization Company"
+  | "Organization Centers"
+  | "Organization Users"
+  | "Organization Roles"
+  | "Organization Integrations";
 
 
 
@@ -29,13 +50,22 @@ type Page =
 const navigationItems: Page[] = [
   "Mission Control",
   "dAIly Report",
+  "Leadership",
   "Import Center",
   "Production Board",
   "WIP Capacity",
   "Scheduling",
+  "Estimator Load",
   "KPIs",
   "Reports",
+  "Estimator Settings",
+  "Beta Setup",
   "Administration",
+  "Organization Company",
+  "Organization Centers",
+  "Organization Users",
+  "Organization Roles",
+  "Organization Integrations",
 ];
 
 
@@ -68,8 +98,17 @@ function PlaceholderPage({ title }: { title: string }) {
 }
 
 function App() {
+  const { signOut } = useAuth();
+  const profile = useUserProfile();
+  const organization = useOrganization();
+  const role = useRole();
+  const contextStatus = useApplicationContextStatus();
   const [activePage, setActivePage] =
     useState<Page>("Mission Control");
+
+  const roleLabel = role
+    ? role.split("_").map((word) => word[0].toUpperCase() + word.slice(1)).join(" ")
+    : "Member";
 
   function renderPage() {
     if (activePage === "Mission Control") {
@@ -78,6 +117,10 @@ function App() {
 
     if (activePage === "dAIly Report") {
       return <DailyReport />;
+    }
+
+    if (activePage === "Leadership") {
+      return <LeadershipDashboard />;
     }
 
     if (activePage === "Production Board") {
@@ -93,7 +136,19 @@ function App() {
     }
 
     if (activePage === "KPIs") {
-      return <OperationsEngineTest />;
+      return <IntelligenceDiagnostics />;
+    }
+
+    if (activePage === "Estimator Load") {
+      return <EstimatorLoadDashboard />;
+    }
+
+    if (activePage === "Estimator Settings") {
+      return <EstimatorSettings />;
+    }
+
+    if (activePage === "Beta Setup") {
+      return <BetaSetup />;
     }
 
     if (activePage === "Administration") {
@@ -101,7 +156,11 @@ function App() {
     }
 
     if (activePage === "Scheduling") {
-      return <CapacityPlanning />;
+      return <SchedulingBoard />;
+    }
+
+    if (activePage.startsWith("Organization ")) {
+      return <OrganizationModule page={activePage.replace("Organization ", "") as "Company" | "Centers" | "Users" | "Roles" | "Integrations"} />;
     }
 
 
@@ -121,7 +180,8 @@ function App() {
         </div>
 
         <nav className="navigation">
-          {navigationItems.map((item, index) => (
+          <div className="nav-section-label">Operations</div>
+          {navigationItems.slice(0, 13).map((item, index) => (
             <button
               className={
                 activePage === item
@@ -138,15 +198,35 @@ function App() {
               <span>{item}</span>
             </button>
           ))}
+          <div className="nav-section-label">Organization</div>
+          {navigationItems.slice(13).map((item, index) => (
+            <button
+              className={activePage === item ? "nav-button active" : "nav-button"}
+              key={item}
+              onClick={() => setActivePage(item)}
+              type="button"
+            >
+              <span className="nav-icon">O{index + 1}</span>
+              <span>{item.replace("Organization ", "")}</span>
+            </button>
+          ))}
         </nav>
 
         <div className="sidebar-footer">
-          <p>Crash Ops Consult LLC</p>
-          <span>Version 0.4</span>
+          <div className="workspace-identity">
+            <span className="workspace-avatar">{(profile?.full_name || profile?.email || "U").charAt(0).toUpperCase()}</span>
+            <div><p>{profile?.full_name || profile?.email || "Crash Ops User"}</p><span>{organization?.name || roleLabel}</span></div>
+          </div>
+          <button className="logout-button" onClick={() => void signOut()} type="button">Sign out</button>
+          <span className="version-label">Crash Ops OS · Beta</span>
         </div>
       </aside>
 
-      <main className="main">{renderPage()}</main>
+      <main className="main">
+        {contextStatus.loading && <div className="context-banner">Loading your organization…</div>}
+        {contextStatus.error && <div className="context-banner error">{contextStatus.error} Contact your administrator if this continues.</div>}
+        {renderPage()}
+      </main>
     </div>
   );
 }

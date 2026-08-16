@@ -1,7 +1,11 @@
 import { useMemo, useRef, useState } from "react";
 import Papa from "papaparse";
 import { SHOP_OPTIONS } from "./services/capacitySettings";
-import { cleanNumber } from "./services/importedData";
+import {
+  cleanNumber,
+  normalizeRepairOrders,
+} from "./services/importedData";
+import { persistWipImport } from "./services/operationsData";
 import {
   parseWipMatrix,
   parseWipWorkbook,
@@ -144,7 +148,8 @@ const [selectedShop, setSelectedShop] =
               Papa.parse<string[]>(file, {
                 header: false,
                 skipEmptyLines: true,
-                complete: (results) => resolve(parseWipMatrix(results.data)),
+                complete: (results) =>
+                  resolve(parseWipMatrix(results.data)),
                 error: reject,
               });
             },
@@ -164,14 +169,16 @@ const [selectedShop, setSelectedShop] =
       setIssues(validateRows(result.rows));
     } catch (error) {
       setParseError(
-        error instanceof Error ? error.message : "The report could not be read.",
+        error instanceof Error
+          ? error.message
+          : "The report could not be read.",
       );
     }
   }
 
-  function applyImport() {
+  async function applyImport() {
     const importRecord = {
-  source: "Nexsyis WIP CSV",
+  source: "Nexsyis WIP Excel/CSV",
   fileName,
   importedAt: new Date().toISOString(),
   rowCount: rows.length,
@@ -188,6 +195,11 @@ const [selectedShop, setSelectedShop] =
     );
 
     setImportApplied(true);
+    try {
+      await persistWipImport(importRecord, normalizeRepairOrders(importRecord));
+    } catch (error: unknown) {
+      setParseError(error instanceof Error ? error.message : "The import was saved locally but could not be persisted.");
+    }
   }
 
   function clearImport() {
