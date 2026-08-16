@@ -1,63 +1,21 @@
 import { useMemo, useRef, useState } from "react";
 import Papa from "papaparse";
-import { normalizeRepairOrders } from "./services/importedData";
+import { SHOP_OPTIONS } from "./services/capacitySettings";
+import {
+  cleanNumber,
+  normalizeRepairOrders,
+} from "./services/importedData";
 import { persistWipImport } from "./services/operationsData";
-
-type NexsyisRow = {
-  "Loc Code": string;
-  Folder: string;
-  "Vehicle Center Tab": string;
-  "Repair Stage": string;
-  Customer: string;
-  Vehicle: string;
-  Insurance: string;
-  "Sales Resource": string;
-  "Service Resource": string;
-  "Total Labor Hours": string;
-  "Pre Tax Total": string;
-  "Created Date": string;
-  "Arrival Date": string;
-  "Completed Date": string;
-};
+import {
+  parseWipMatrix,
+  parseWipWorkbook,
+  type NexsyisRow,
+} from "./services/wipImport";
 
 type ImportIssue = {
   row: number;
   message: string;
 };
-
-const shopOptions = [
-  "Monroeville",
-  "Greensburg",
-  "North Hills",
-  "North Huntingdon",
-  "Canonsburg",
-];
-
-const requiredColumns: (keyof NexsyisRow)[] = [
-  "Loc Code",
-  "Folder",
-  "Vehicle Center Tab",
-  "Repair Stage",
-  "Customer",
-  "Vehicle",
-  "Insurance",
-  "Sales Resource",
-  "Service Resource",
-  "Total Labor Hours",
-  "Pre Tax Total",
-  "Created Date",
-  "Arrival Date",
-  "Completed Date",
-];
-
-function cleanNumber(value: string | undefined) {
-  if (!value) return 0;
-
-  const cleaned = String(value).replace(/[$,%\s,]/g, "");
-  const parsed = Number(cleaned);
-
-  return Number.isFinite(parsed) ? parsed : 0;
-}
 
 function ImportCenter() {
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -103,7 +61,12 @@ const [selectedShop, setSelectedShop] =
     const technicians = Array.from(
       new Set(
         rows
-          .map((row) => row["Service Resource"]?.trim())
+          .map((row) =>
+            (
+              row["Crash Ops Technician"] ||
+              row["Service Resource"]
+            )?.trim(),
+          )
           .filter(Boolean),
       ),
     );
@@ -170,7 +133,7 @@ const [selectedShop, setSelectedShop] =
     return validationIssues;
   }
 
-  function handleFile(file: File) {
+  async function handleFile(file: File) {
     setFileName(file.name);
     setRows([]);
     setIssues([]);
@@ -178,44 +141,44 @@ const [selectedShop, setSelectedShop] =
     setImportApplied(false);
     setParseError("");
 
-    Papa.parse<NexsyisRow>(file, {
-      header: true,
-      skipEmptyLines: true,
-      transformHeader: (header) => header.trim(),
-      complete: (results) => {
-        const headers = results.meta.fields || [];
+    try {
+      const result = file.name.toLowerCase().endsWith(".csv")
+        ? await new Promise<ReturnType<typeof parseWipMatrix>>(
+            (resolve, reject) => {
+              Papa.parse<string[]>(file, {
+                header: false,
+                skipEmptyLines: true,
+                complete: (results) =>
+                  resolve(parseWipMatrix(results.data)),
+                error: reject,
+              });
+            },
+          )
+        : await parseWipWorkbook(file);
 
-        const missing = requiredColumns.filter(
-          (column) => !headers.includes(column),
+      setMissingColumns(result.missingColumns);
+
+      if (result.format === "unknown") {
+        setParseError(
+          "This file does not match a supported Nexsyis WIP report layout.",
         );
+        return;
+      }
 
-        setMissingColumns(missing);
-
-        if (missing.length > 0) {
-          setParseError(
-            "This file does not match the expected Nexsyis WIP report layout.",
-          );
-          return;
-        }
-
-        const importedRows = results.data.filter((row) =>
-          Object.values(row).some((value) =>
-            String(value ?? "").trim(),
-          ),
-        );
-
-        setRows(importedRows);
-        setIssues(validateRows(importedRows));
-      },
-      error: (error) => {
-        setParseError(error.message);
-      },
-    });
+      setRows(result.rows);
+      setIssues(validateRows(result.rows));
+    } catch (error) {
+      setParseError(
+        error instanceof Error
+          ? error.message
+          : "The report could not be read.",
+      );
+    }
   }
 
   async function applyImport() {
     const importRecord = {
-  source: "Nexsyis WIP CSV",
+  source: "Nexsyis WIP Excel/CSV",
   fileName,
   importedAt: new Date().toISOString(),
   rowCount: rows.length,
@@ -264,7 +227,7 @@ const [selectedShop, setSelectedShop] =
           <p className="eyebrow">DATA INGESTION</p>
           <h2>Import Center</h2>
           <p className="page-description">
-            Upload a Nexsyis Work in Process CSV and convert it into
+            Upload a Nexsyis Work in Process Excel or CSV report and convert it into
             operational data for Crash Ops OS.
           </p>
         </div>
@@ -272,13 +235,13 @@ const [selectedShop, setSelectedShop] =
 
       <section className="panel import-upload-panel">
         <div className="import-upload-copy">
-          <div className="import-icon">CSV</div>
+          <div className="import-icon">WIP</div>
 
           <div>
             <h3>Upload Nexsyis WIP Report</h3>
             <p>
-              Export the Work in Process report as CSV, then select it
-              here. The original report remains unchanged.
+              Select the Excel or CSV Work in Process report. Technician-grouped
+              reports are assigned automatically from each B Tech section.
             </p>
           </div>
         </div>
@@ -293,7 +256,7 @@ const [selectedShop, setSelectedShop] =
       }
       value={selectedShop}
     >
-      {shopOptions.map((shop) => (
+      {SHOP_OPTIONS.map((shop) => (
         <option key={shop} value={shop}>
           {shop}
         </option>
@@ -302,7 +265,7 @@ const [selectedShop, setSelectedShop] =
   </label>
 
   <input
-            accept=".csv,text/csv"
+            accept=".xlsx,.xls,.csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel,text/csv"
             onChange={(event) => {
               const file = event.target.files?.[0];
               if (file) handleFile(file);
@@ -402,7 +365,7 @@ const [selectedShop, setSelectedShop] =
                 </div>
 
                 <div>
-                  <span>Service resources found</span>
+                  <span>Body technicians found</span>
                   <strong>{summary.technicians.length}</strong>
                 </div>
 
@@ -487,7 +450,11 @@ const [selectedShop, setSelectedShop] =
                     <span>{row.Vehicle || "—"}</span>
                     <span>{row.Insurance || "—"}</span>
                     <span>{row["Sales Resource"] || "—"}</span>
-                    <span>{row["Service Resource"] || "—"}</span>
+                    <span>
+                      {row["Crash Ops Technician"] ||
+                        row["Service Resource"] ||
+                        "—"}
+                    </span>
                     <span>
                       {cleanNumber(
                         row["Total Labor Hours"],

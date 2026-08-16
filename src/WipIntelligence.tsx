@@ -60,11 +60,13 @@ function buildTimeline(order: RepairOrder) {
 function WipIntelligence() {
   const [selectedShop, setSelectedShop] =
     useState("All Locations");
+  const [selectedTechnician, setSelectedTechnician] =
+    useState("All Technicians");
 
   const [selectedOrder, setSelectedOrder] =
     useState<RepairOrder | null>(null);
 
-  const importedRecord = useMemo(loadImportedWip, []);
+  const importedRecord = useMemo(() => loadImportedWip(), []);
 
   const repairOrders = useMemo(
     () => normalizeRepairOrders(importedRecord),
@@ -83,13 +85,55 @@ function WipIntelligence() {
           (shop) => shop.shop === selectedShop,
         );
 
-  const visibleRepairs =
-    selectedShop === "All Locations"
-      ? intelligence.repairs
-      : intelligence.repairs.filter(
-          (repair) =>
-            repair.repairOrder.shop === selectedShop,
-        );
+  const shopRepairs = useMemo(
+    () =>
+      selectedShop === "All Locations"
+        ? intelligence.repairs
+        : intelligence.repairs.filter(
+            (repair) =>
+              repair.repairOrder.shop === selectedShop,
+          ),
+    [intelligence.repairs, selectedShop],
+  );
+
+  const technicianSummaries = useMemo(() => {
+    const grouped = shopRepairs
+      .filter((repair) => repair.isActiveProduction)
+      .reduce<Record<string, typeof shopRepairs>>(
+        (groups, repair) => {
+          const technician =
+            repair.repairOrder.technician || "Unassigned";
+          if (!groups[technician]) groups[technician] = [];
+          groups[technician].push(repair);
+          return groups;
+        },
+        {},
+      );
+
+    return Object.entries(grouped)
+      .map(([technician, repairs]) => ({
+        technician,
+        jobs: repairs.length,
+        laborHours: repairs.reduce(
+          (total, repair) =>
+            total + repair.repairOrder.laborHours,
+          0,
+        ),
+      }))
+      .sort((a, b) => b.laborHours - a.laborHours);
+  }, [shopRepairs]);
+
+  const visibleRepairs = useMemo(
+    () =>
+      selectedTechnician === "All Technicians"
+        ? shopRepairs
+        : shopRepairs.filter(
+            (repair) =>
+              repair.repairOrder.technician ===
+              selectedTechnician,
+          ),
+    [selectedTechnician, shopRepairs],
+  );
 
 
   const activeRepairs = visibleRepairs.filter(
@@ -172,6 +216,7 @@ function WipIntelligence() {
             className="report-selector"
             onChange={(event) => {
               setSelectedShop(event.target.value);
+              setSelectedTechnician("All Technicians");
               setSelectedOrder(null);
             }}
             value={selectedShop}
@@ -181,6 +226,23 @@ function WipIntelligence() {
             {intelligence.shops.map((shop) => (
               <option key={shop.shop} value={shop.shop}>
                 {shop.shop}
+              </option>
+            ))}
+          </select>
+
+          <select
+            className="report-selector"
+            onChange={(event) => {
+              setSelectedTechnician(event.target.value);
+              setSelectedOrder(null);
+            }}
+            value={selectedTechnician}
+          >
+            <option>All Technicians</option>
+
+            {technicianSummaries.map((summary) => (
+              <option key={summary.technician}>
+                {summary.technician}
               </option>
             ))}
           </select>
@@ -221,6 +283,27 @@ function WipIntelligence() {
           </strong>
           <small>Based on valid arrival dates</small>
         </article>
+      </section>
+
+      <section className="panel">
+        <div className="panel-header">
+          <div>
+            <p className="section-label">TECHNICIAN LOAD</p>
+            <h3>Assigned WIP by Body Technician</h3>
+          </div>
+        </div>
+
+        <div className="stage-summary-list">
+          {technicianSummaries.map((summary) => (
+            <div key={summary.technician}>
+              <span>
+                {summary.technician} · {summary.jobs} job
+                {summary.jobs === 1 ? "" : "s"}
+              </span>
+              <strong>{summary.laborHours.toFixed(1)} hrs</strong>
+            </div>
+          ))}
+        </div>
       </section>
 
       <section className="wip-core-summary-grid">
