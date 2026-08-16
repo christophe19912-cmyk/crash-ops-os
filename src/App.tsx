@@ -5,11 +5,11 @@ import WipIntelligence from "./WipIntelligence";
 import DailyReport from "./DailyReport";
 import MissionControl from "./MissionControl";
 import ProductionBoard from "./ProductionBoard";
-import IntelligenceDiagnostics from "./IntelligenceDiagnostics";
 import WipCapacitySettings from "./WipCapacitySettings";
 import SchedulingBoard from "./SchedulingBoard";
 import EstimatorLoadDashboard from "./EstimatorLoadDashboard";
 import EstimatorSettings from "./EstimatorSettings";
+import TechnicianSettings from "./TechnicianSettings";
 import BetaSetup from "./BetaSetup";
 import OrganizationModule from "./OrganizationModule";
 import LeadershipDashboard from "./LeadershipDashboard";
@@ -33,6 +33,7 @@ type Page =
   | "Reports"
   | "Estimator Load"
   | "Estimator Settings"
+  | "Technician Settings"
   | "Beta Setup"
   | "Administration"
   | "Organization Company"
@@ -59,6 +60,7 @@ const navigationItems: Page[] = [
   "KPIs",
   "Reports",
   "Estimator Settings",
+  "Technician Settings",
   "Beta Setup",
   "Administration",
   "Organization Company",
@@ -91,6 +93,31 @@ function PlaceholderPage({ title }: { title: string }) {
         <p>
           Navigation is working. This module will be developed after
           the dAIly Report workflow is validated.
+        </p>
+      </section>
+    </>
+  );
+}
+
+function KpiPlaceholder() {
+  return (
+    <>
+      <header className="topbar">
+        <div>
+          <p className="eyebrow">PERFORMANCE MEASUREMENT</p>
+          <h2>KPIs</h2>
+          <p className="page-description">
+            KPI development is intentionally paused until each metric,
+            source system, and calculation method is approved.
+          </p>
+        </div>
+      </header>
+
+      <section className="panel placeholder-panel">
+        <h3>No KPI calculations are active</h3>
+        <p>
+          This area will remain blank so operational intelligence and
+          planning assumptions are not presented as finalized performance KPIs.
         </p>
       </section>
     </>
@@ -136,7 +163,7 @@ function App() {
     }
 
     if (activePage === "KPIs") {
-      return <IntelligenceDiagnostics />;
+      return <KpiPlaceholder />;
     }
 
     if (activePage === "Estimator Load") {
@@ -145,6 +172,10 @@ function App() {
 
     if (activePage === "Estimator Settings") {
       return <EstimatorSettings />;
+    }
+
+    if (activePage === "Technician Settings") {
+      return <TechnicianSettings />;
     }
 
     if (activePage === "Beta Setup") {
@@ -181,7 +212,7 @@ function App() {
 
         <nav className="navigation">
           <div className="nav-section-label">Operations</div>
-          {navigationItems.slice(0, 13).map((item, index) => (
+          {navigationItems.slice(0, 14).map((item, index) => (
             <button
               className={
                 activePage === item
@@ -199,7 +230,7 @@ function App() {
             </button>
           ))}
           <div className="nav-section-label">Organization</div>
-          {navigationItems.slice(13).map((item, index) => (
+          {navigationItems.slice(14).map((item, index) => (
             <button
               className={activePage === item ? "nav-button active" : "nav-button"}
               key={item}
