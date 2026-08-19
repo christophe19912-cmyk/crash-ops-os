@@ -50,22 +50,42 @@ export default async function handler(req: any, res: any) {
 
   const documents = Array.isArray(req.body?.documents) ? req.body.documents.slice(0, 4) : [];
   if (!documents.length) {
-    res.status(400).json({ error: "No estimate images were provided." });
+    res.status(400).json({ error: "No estimate files were provided." });
     return;
   }
 
-  const invalid = documents.find((doc: any) => typeof doc?.dataUrl !== "string" || !doc.dataUrl.startsWith("data:image/"));
+  const invalid = documents.find((doc: any) => {
+    if (typeof doc?.dataUrl !== "string") return true;
+    return !doc.dataUrl.startsWith("data:image/") && !doc.dataUrl.startsWith("data:application/pdf");
+  });
   if (invalid) {
-    res.status(400).json({ error: "This sprint currently accepts CCC estimate images (JPEG, PNG, or WebP)." });
+    res.status(400).json({ error: "Choose a CCC PDF or image file (JPEG, PNG, or WebP)." });
     return;
   }
+
+  const fileInputs = documents.map((doc: any) => {
+    if (doc.dataUrl.startsWith("data:application/pdf")) {
+      return {
+        type: "input_file",
+        filename: doc.name || "ccc-estimate.pdf",
+        file_data: doc.dataUrl,
+      };
+    }
+
+    return {
+      type: "input_image",
+      image_url: doc.dataUrl,
+      detail: "high",
+    };
+  });
 
   const content: any[] = [
     {
       type: "input_text",
       text: [
-        "Extract job intake data from these CCC ONE collision estimate pages.",
-        "The images may include a preliminary-estimate cover page and/or Estimate Totals page.",
+        "Extract job intake data from these CCC ONE collision estimate documents.",
+        "The input may be an original multi-page PDF, a preliminary-estimate cover page image, an Estimate Totals page image, or a mixture.",
+        "Read the full PDF when one is supplied; do not rely only on the first page.",
         "Return only values visible in the documents. Use empty strings or zero when absent.",
         "Do not confuse claim number, CCC job number, RO number, and workfile ID.",
         "For labor, capture body, paint, frame, and mechanical hours separately when shown.",
@@ -74,7 +94,7 @@ export default async function handler(req: any, res: any) {
         "Add a short confidence note only for fields that are unreadable, ambiguous, or inferred from a subtotal rather than directly printed."
       ].join(" ")
     },
-    ...documents.map((doc: any) => ({ type: "input_image", image_url: doc.dataUrl, detail: "high" })),
+    ...fileInputs,
   ];
 
   try {
@@ -101,7 +121,7 @@ export default async function handler(req: any, res: any) {
     const payload = await response.json();
     if (!response.ok) {
       console.error("OpenAI estimate scan error", payload);
-      res.status(502).json({ error: "The estimate could not be read. Try a clearer photo or try again." });
+      res.status(502).json({ error: "The estimate could not be read. Try the original CCC PDF or a clearer image." });
       return;
     }
 
