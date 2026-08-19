@@ -85,16 +85,33 @@ export default function EstimateIntake({ onScheduled }: Props) {
   const [notes, setNotes] = useState("");
   const [saved, setSaved] = useState(false);
 
-  function pickFiles(event: ChangeEvent<HTMLInputElement>) {
-    setFiles(Array.from(event.target.files || []).slice(0, 4));
+  function addEstimateFiles(event: ChangeEvent<HTMLInputElement>) {
+    const selected = Array.from(event.target.files || []);
+    if (!selected.length) return;
+
+    setFiles((current) => {
+      const combined = [...current, ...selected];
+      const unique = combined.filter((file, index, all) =>
+        all.findIndex((candidate) => candidate.name === file.name && candidate.size === file.size && candidate.lastModified === file.lastModified) === index,
+      );
+      return unique.slice(0, 4);
+    });
     setSaved(false);
     setError("");
+    event.target.value = "";
   }
 
   async function pickVehiclePhoto(event: ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0] || null;
     setVehiclePhoto(file);
     setVehiclePhotoPreview(file ? await createPhotoThumbnail(file) : "");
+    event.target.value = "";
+  }
+
+  function clearEstimateFiles() {
+    setFiles([]);
+    setSaved(false);
+    setError("");
   }
 
   async function scanEstimate() {
@@ -147,15 +164,29 @@ export default function EstimateIntake({ onScheduled }: Props) {
 
   return (
     <>
-      <header className="topbar"><div><p className="eyebrow">CCC INTAKE · SCHEDULE/WIP</p><h2>Estimate Intake</h2><p className="page-description">Photograph the CCC cover and totals pages, verify the extracted job data, attach a vehicle photo, then add the repair directly to the schedule.</p></div></header>
+      <header className="topbar"><div><p className="eyebrow">CCC INTAKE · SCHEDULE/WIP</p><h2>Estimate Intake</h2><p className="page-description">Photograph the CCC cover and totals pages, or choose existing images from your phone/files, verify the extracted job data, attach a vehicle photo, then add the repair directly to the schedule.</p></div></header>
 
       <section className="panel">
         <div className="panel-header"><div><p className="section-label">STEP 1</p><h3>Scan CCC Estimate</h3></div></div>
         <div className="scheduling-form-grid">
-          <label><span>CCC estimate images</span><input accept="image/jpeg,image/png,image/webp" capture="environment" multiple onChange={pickFiles} type="file" /><small>Cover page + totals page recommended. Up to 4 images.</small></label>
+          <label>
+            <span>Take estimate photo</span>
+            <input accept="image/*" capture="environment" onChange={addEstimateFiles} type="file" />
+            <small>Opens the rear camera. Add the cover and totals pages one at a time.</small>
+          </label>
+          <label>
+            <span>Choose photos / image files</span>
+            <input accept="image/jpeg,image/png,image/webp" multiple onChange={addEstimateFiles} type="file" />
+            <small>Select existing screenshots or estimate images from Photos or Files. Up to 4 total images.</small>
+          </label>
           <label><span>Center</span><input value={shop} onChange={(e) => setShop(e.target.value)} /></label>
         </div>
-        {files.length > 0 && <p>{files.length} estimate image{files.length === 1 ? "" : "s"} ready: {files.map((file) => file.name).join(", ")}</p>}
+        {files.length > 0 && (
+          <div>
+            <p>{files.length} estimate image{files.length === 1 ? "" : "s"} ready: {files.map((file) => file.name).join(", ")}</p>
+            <button className="text-button" onClick={clearEstimateFiles} type="button">Clear estimate images</button>
+          </div>
+        )}
         <div className="scheduling-form-actions"><button className="primary-button" disabled={scanning} onClick={() => void scanEstimate()} type="button">{scanning ? "Reading CCC Estimate…" : "Scan Estimate"}</button></div>
         {error && <div className="context-banner error">{error}</div>}
       </section>
@@ -176,9 +207,11 @@ export default function EstimateIntake({ onScheduled }: Props) {
         <div className="scheduling-form-grid">
           <label><span>Drop Day</span><select value={day} onChange={(e) => setDay(e.target.value as ScheduleDay)}>{SCHEDULE_DAYS.map((item) => <option key={item}>{item}</option>)}</select></label>
           <label><span>Severity</span><select value={severity} onChange={(e) => setSeverity(e.target.value as RepairSeverity)}><option>Light</option><option>Medium</option><option>Heavy</option></select></label>
-          <label><span>Vehicle / damage photo</span><input accept="image/*" capture="environment" onChange={(e) => void pickVehiclePhoto(e)} type="file" />{vehiclePhoto && <small>{vehiclePhoto.name} attached</small>}</label>
+          <label><span>Take vehicle / damage photo</span><input accept="image/*" capture="environment" onChange={(e) => void pickVehiclePhoto(e)} type="file" /><small>Use the camera for a new photo.</small></label>
+          <label><span>Choose vehicle / damage photo</span><input accept="image/*" onChange={(e) => void pickVehiclePhoto(e)} type="file" /><small>Select an existing photo from Photos or Files.</small></label>
           <label className="scheduling-notes-field"><span>Notes</span><input value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Parts, tow-in, insurance, or scheduling notes" /></label>
         </div>
+        {vehiclePhoto && <small>{vehiclePhoto.name} attached</small>}
         {vehiclePhotoPreview && <img src={vehiclePhotoPreview} alt="Vehicle preview" style={{ maxWidth: 320, borderRadius: 12, marginTop: 12 }} />}
         <div className="scheduling-form-actions"><button className="primary-button" onClick={addToSchedule} type="button">Add to Schedule</button></div>
         {saved && <div className="context-banner">Job added to the schedule with CCC identity, labor-hour, estimate-total, and vehicle-photo data.</div>}
