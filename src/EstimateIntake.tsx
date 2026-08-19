@@ -89,6 +89,15 @@ export default function EstimateIntake({ onScheduled }: Props) {
     const selected = Array.from(event.target.files || []);
     if (!selected.length) return;
 
+    const unsupported = selected.find((file) =>
+      file.type !== "application/pdf" && !file.type.startsWith("image/"),
+    );
+    if (unsupported) {
+      setError("Choose a PDF or an image file (JPEG, PNG, or WebP).");
+      event.target.value = "";
+      return;
+    }
+
     setFiles((current) => {
       const combined = [...current, ...selected];
       const unique = combined.filter((file, index, all) =>
@@ -115,7 +124,7 @@ export default function EstimateIntake({ onScheduled }: Props) {
   }
 
   async function scanEstimate() {
-    if (!files.length) return setError("Add at least one CCC estimate image before scanning.");
+    if (!files.length) return setError("Add at least one CCC estimate PDF or image before scanning.");
     setScanning(true); setError(""); setSaved(false);
     try {
       const documents = await Promise.all(files.map(async (file) => ({ name: file.name, type: file.type, dataUrl: await fileToDataUrl(file) })));
@@ -164,7 +173,7 @@ export default function EstimateIntake({ onScheduled }: Props) {
 
   return (
     <>
-      <header className="topbar"><div><p className="eyebrow">CCC INTAKE · SCHEDULE/WIP</p><h2>Estimate Intake</h2><p className="page-description">Photograph the CCC cover and totals pages, or choose existing images from your phone/files, verify the extracted job data, attach a vehicle photo, then add the repair directly to the schedule.</p></div></header>
+      <header className="topbar"><div><p className="eyebrow">CCC INTAKE · SCHEDULE/WIP</p><h2>Estimate Intake</h2><p className="page-description">Upload the original CCC PDF when available, or photograph/select estimate pages, verify the extracted job data, attach a vehicle photo, then add the repair directly to the schedule.</p></div></header>
 
       <section className="panel">
         <div className="panel-header"><div><p className="section-label">STEP 1</p><h3>Scan CCC Estimate</h3></div></div>
@@ -172,19 +181,19 @@ export default function EstimateIntake({ onScheduled }: Props) {
           <label>
             <span>Take estimate photo</span>
             <input accept="image/*" capture="environment" onChange={addEstimateFiles} type="file" />
-            <small>Opens the rear camera. Add the cover and totals pages one at a time.</small>
+            <small>Opens the rear camera. Add pages one at a time.</small>
           </label>
           <label>
-            <span>Choose photos / image files</span>
-            <input accept="image/jpeg,image/png,image/webp" multiple onChange={addEstimateFiles} type="file" />
-            <small>Select existing screenshots or estimate images from Photos or Files. Up to 4 total images.</small>
+            <span>Choose CCC PDF / photos</span>
+            <input accept="application/pdf,image/jpeg,image/png,image/webp" multiple onChange={addEstimateFiles} type="file" />
+            <small>Best option: choose the original CCC PDF from Files. Screenshots/photos also work. Up to 4 files.</small>
           </label>
           <label><span>Center</span><input value={shop} onChange={(e) => setShop(e.target.value)} /></label>
         </div>
         {files.length > 0 && (
           <div>
-            <p>{files.length} estimate image{files.length === 1 ? "" : "s"} ready: {files.map((file) => file.name).join(", ")}</p>
-            <button className="text-button" onClick={clearEstimateFiles} type="button">Clear estimate images</button>
+            <p>{files.length} estimate file{files.length === 1 ? "" : "s"} ready: {files.map((file) => file.name).join(", ")}</p>
+            <button className="text-button" onClick={clearEstimateFiles} type="button">Clear estimate files</button>
           </div>
         )}
         <div className="scheduling-form-actions"><button className="primary-button" disabled={scanning} onClick={() => void scanEstimate()} type="button">{scanning ? "Reading CCC Estimate…" : "Scan Estimate"}</button></div>
