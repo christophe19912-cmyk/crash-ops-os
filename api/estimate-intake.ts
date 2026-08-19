@@ -36,6 +36,11 @@ const schema = {
   ],
 };
 
+function base64Payload(dataUrl: string) {
+  const commaIndex = dataUrl.indexOf(",");
+  return commaIndex >= 0 ? dataUrl.slice(commaIndex + 1) : dataUrl;
+}
+
 export default async function handler(req: any, res: any) {
   if (req.method !== "POST") {
     res.status(405).json({ error: "Method not allowed" });
@@ -68,7 +73,7 @@ export default async function handler(req: any, res: any) {
       return {
         type: "input_file",
         filename: doc.name || "ccc-estimate.pdf",
-        file_data: doc.dataUrl,
+        file_data: base64Payload(doc.dataUrl),
       };
     }
 
@@ -121,7 +126,10 @@ export default async function handler(req: any, res: any) {
     const payload = await response.json();
     if (!response.ok) {
       console.error("OpenAI estimate scan error", payload);
-      res.status(502).json({ error: "The estimate could not be read. Try the original CCC PDF or a clearer image." });
+      const apiMessage = payload?.error?.message || payload?.message || "Unknown OpenAI response error";
+      res.status(502).json({
+        error: `The estimate could not be read: ${String(apiMessage).slice(0, 240)}`,
+      });
       return;
     }
 
