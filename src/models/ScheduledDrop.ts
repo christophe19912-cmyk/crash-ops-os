@@ -34,4 +34,5 @@ export type ScheduledDrop = {
   adjustments?: number;
   netCostOfRepairs?: number;
   estimateImageName?: string;
+  vehiclePhotoDataUrl?: string;
 };
