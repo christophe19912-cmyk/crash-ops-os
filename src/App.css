@@ -3228,3 +3228,44 @@ button {
 .leadership-drawer textarea { border: 1px solid #cbd5e1; border-radius: 12px; box-sizing: border-box; margin: 1rem 0; min-height: 90px; padding: 0.75rem; width: 100%; }
 @media (max-width: 1000px) { .leadership-metrics { grid-template-columns: repeat(2, 1fr); } .leadership-filters { grid-template-columns: repeat(3, 1fr); } }
 @media (max-width: 650px) { .leadership-metrics, .leadership-filters, .timeline-columns { grid-template-columns: 1fr; } }
+
+/* REPAIR LIFECYCLE WORKSPACE */
+.repair-create { align-items: end; display: grid; gap: 0.75rem; grid-template-columns: repeat(4, minmax(0, 1fr)); margin-bottom: 1rem; }
+.repair-create label, .repair-edit-grid label, .repair-notes { color: #64748b; display: grid; font-size: 0.72rem; font-weight: 800; gap: 0.35rem; text-transform: uppercase; }
+.repair-create input, .repair-create select, .repair-filters input, .repair-filters select, .repair-edit-grid input, .repair-notes textarea { border: 1px solid #cbd5e1; border-radius: 10px; padding: 0.65rem; }
+.repair-lifecycle-metrics { display: grid; gap: 0.75rem; grid-template-columns: repeat(5, 1fr); margin-bottom: 1rem; }
+.repair-lifecycle-metrics .card p { text-transform: capitalize; }
+.repair-filters { display: grid; gap: 0.75rem; grid-template-columns: 2fr 1fr 1fr; margin-bottom: 1rem; }
+.repair-workspace-layout { display: grid; gap: 1rem; grid-template-columns: minmax(300px, 0.8fr) minmax(550px, 1.5fr); }
+.repair-card-list { align-self: start; display: grid; gap: 0.75rem; }
+.repair-rich-card { background: #fff; border: 1px solid #e2e8f0; border-radius: 16px; box-shadow: 0 8px 24px rgba(15,23,42,.06); cursor: pointer; display: grid; gap: 0.55rem; padding: 1rem; text-align: left; }
+.repair-rich-card.active { border-color: #2563eb; box-shadow: 0 10px 30px rgba(37,99,235,.14); }
+.repair-rich-card > div:first-child { align-items: center; display: flex; gap: 0.55rem; }
+.repair-rich-card > div:first-child small { margin-left: auto; }
+.repair-rich-card h3, .repair-rich-card p { margin: 0; }
+.repair-rich-card p, .repair-rich-card small { color: #64748b; }
+.repair-lifecycle-badge { background: #e2e8f0; border-radius: 999px; font-size: .65rem; font-weight: 900; padding: .3rem .5rem; text-transform: uppercase; }
+.repair-lifecycle-badge.wip { background: #dbeafe; color: #1d4ed8; }
+.repair-lifecycle-badge.qc { background: #fef3c7; color: #92400e; }
+.repair-lifecycle-badge.delivered, .repair-delivered { background: #dcfce7; color: #166534; }
+.repair-card-facts { display: grid; gap: .35rem; grid-template-columns: 1fr 1fr; }
+.repair-card-facts span { background: #f8fafc; border-radius: 8px; color: #475569; font-size: .75rem; padding: .4rem; }
+.repair-delivered { border-radius: 999px; font-size: .72rem; font-weight: 900; padding: .55rem .8rem; text-transform: uppercase; }
+.repair-lifecycle-rail { display: grid; grid-template-columns: repeat(5, 1fr); margin: 1rem 0; }
+.repair-lifecycle-rail > div { border-top: 4px solid #e2e8f0; display: grid; gap: .3rem; padding-top: .6rem; text-transform: capitalize; }
+.repair-lifecycle-rail > div.complete { border-color: #2563eb; }
+.repair-lifecycle-rail span { background: #e2e8f0; border-radius: 50%; display: grid; font-size: .7rem; height: 24px; place-items: center; width: 24px; }
+.repair-lifecycle-rail .complete span { background: #2563eb; color: #fff; }
+.repair-data-grid { display: grid; gap: .75rem; grid-template-columns: repeat(3, 1fr); }
+.repair-data-grid > div { background: #f8fafc; border-radius: 12px; padding: .8rem; }
+.repair-data-grid span { color: #64748b; font-size: .7rem; font-weight: 900; text-transform: uppercase; }
+.repair-data-grid p { margin: .45rem 0 0; }
+.repair-edit-grid { display: grid; gap: .75rem; grid-template-columns: repeat(4, 1fr); margin-top: 1rem; }
+.repair-notes { margin-top: 1rem; }
+.repair-notes textarea { min-height: 80px; }
+.repair-history { margin-top: 1.2rem; }
+.repair-history article { border-left: 3px solid #2563eb; padding: .55rem .75rem; }
+.repair-history article > div { display: flex; justify-content: space-between; }
+.repair-history article span { color: #64748b; font-size: .72rem; }
+@media (max-width: 1000px) { .repair-create { grid-template-columns: repeat(2, 1fr); } .repair-workspace-layout { grid-template-columns: 1fr; } }
+@media (max-width: 700px) { .repair-lifecycle-metrics, .repair-filters, .repair-data-grid, .repair-edit-grid { grid-template-columns: 1fr; } .repair-create { grid-template-columns: 1fr; } }
