@@ -14,6 +14,7 @@ import TechnicianSettings from "./TechnicianSettings";
 import BetaSetup from "./BetaSetup";
 import OrganizationModule from "./OrganizationModule";
 import LeadershipDashboard from "./LeadershipDashboard";
+import RepairWorkspace from "./RepairWorkspace";
 import { useAuth } from "./auth/AuthProvider";
 import {
   useApplicationContextStatus,
@@ -24,6 +25,7 @@ import {
 
 type Page =
   | "Mission Control"
+  | "Repairs"
   | "dAIly Report"
   | "Leadership"
   | "Import Center"
@@ -46,6 +48,7 @@ type Page =
 
 const navigationItems: Page[] = [
   "Mission Control",
+  "Repairs",
   "dAIly Report",
   "Leadership",
   "Import Center",
@@ -117,6 +120,7 @@ function App() {
 
   function renderPage() {
     if (activePage === "Mission Control") return <MissionControl />;
+    if (activePage === "Repairs") return <RepairWorkspace />;
     if (activePage === "dAIly Report") return <DailyReport />;
     if (activePage === "Leadership") return <LeadershipDashboard />;
     if (activePage === "Production Board") return <ProductionBoard />;

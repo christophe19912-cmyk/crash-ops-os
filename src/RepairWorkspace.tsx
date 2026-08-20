@@ -1,0 +1,96 @@
+import { useEffect, useMemo, useState } from "react";
+import {
+  advanceRepairLifecycle, createScheduledRepair, loadRepairLifecycleEvents, loadRepairWorkspace,
+  updateRepairWorkspace, type RepairLifecycleEvent, type RepairLifecycleStatus,
+  type RepairWorkspaceRecord, type RepairWorkspaceShop,
+} from "./services/repairWorkspaceData";
+
+const lifecycle: RepairLifecycleStatus[] = ["scheduled", "arrived", "wip", "qc", "delivered"];
+const emptyForm = { shopId: "", roNumber: "", customer: "", vehicle: "", scheduledDate: "", insurance: "", vin: "", claimNumber: "" };
+
+function RepairWorkspace() {
+  const [repairs, setRepairs] = useState<RepairWorkspaceRecord[]>([]);
+  const [shops, setShops] = useState<RepairWorkspaceShop[]>([]);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [events, setEvents] = useState<RepairLifecycleEvent[]>([]);
+  const [shopFilter, setShopFilter] = useState("all");
+  const [statusFilter, setStatusFilter] = useState("active");
+  const [search, setSearch] = useState("");
+  const [showCreate, setShowCreate] = useState(false);
+  const [form, setForm] = useState(emptyForm);
+  const [error, setError] = useState("");
+  const [busy, setBusy] = useState(false);
+
+  async function refresh(preferredId?: string) {
+    const data = await loadRepairWorkspace();
+    setRepairs(data.repairs); setShops(data.shops);
+    setSelectedId((current) => preferredId ?? current ?? data.repairs[0]?.id ?? null);
+    setError("");
+  }
+
+  useEffect(() => {
+    let active = true;
+    void loadRepairWorkspace().then((data) => {
+      if (!active) return;
+      setRepairs(data.repairs); setShops(data.shops); setSelectedId(data.repairs[0]?.id ?? null);
+      setForm((current) => ({ ...current, shopId: data.shops[0]?.id ?? "" }));
+    }).catch((caught: unknown) => { if (active) setError(caught instanceof Error ? caught.message : "Repair workspace could not be loaded."); });
+    return () => { active = false; };
+  }, []);
+
+  useEffect(() => {
+    if (!selectedId) return;
+    let active = true;
+    void loadRepairLifecycleEvents(selectedId).then((data) => { if (active) setEvents(data); })
+      .catch((caught: unknown) => { if (active) setError(caught instanceof Error ? caught.message : "Repair history could not be loaded."); });
+    return () => { active = false; };
+  }, [selectedId]);
+
+  const filtered = useMemo(() => repairs.filter((repair) => {
+    const query = search.trim().toLowerCase();
+    const matchesSearch = !query || [repair.ro_number, repair.customer, repair.vehicle, repair.vin, repair.claim_number]
+      .some((value) => value?.toLowerCase().includes(query));
+    const matchesStatus = statusFilter === "all" || (statusFilter === "active"
+      ? repair.lifecycle_status !== "delivered" : repair.lifecycle_status === statusFilter);
+    return matchesSearch && matchesStatus && (shopFilter === "all" || repair.shop_id === shopFilter);
+  }), [repairs, search, shopFilter, statusFilter]);
+
+  const selected = repairs.find((repair) => repair.id === selectedId) ?? null;
+  const statusIndex = selected ? lifecycle.indexOf(selected.lifecycle_status) : -1;
+  const nextStatus = statusIndex >= 0 && statusIndex < lifecycle.length - 1 ? lifecycle[statusIndex + 1] : null;
+  const shopName = (id: string) => shops.find((shop) => shop.id === id)?.name ?? "Unknown shop";
+
+  async function advance() {
+    if (!selected || !nextStatus) return;
+    setBusy(true);
+    try { await advanceRepairLifecycle(selected.id, nextStatus); await refresh(selected.id); setEvents(await loadRepairLifecycleEvents(selected.id)); }
+    catch (caught: unknown) { setError(caught instanceof Error ? caught.message : "Repair could not advance."); }
+    finally { setBusy(false); }
+  }
+
+  async function saveField(changes: Parameters<typeof updateRepairWorkspace>[1]) {
+    if (!selected) return;
+    try { await updateRepairWorkspace(selected.id, changes); await refresh(selected.id); }
+    catch (caught: unknown) { setError(caught instanceof Error ? caught.message : "Repair details could not be saved."); }
+  }
+
+  async function createRepair() {
+    if (!form.shopId || !form.roNumber.trim()) { setError("Shop and repair-order number are required."); return; }
+    setBusy(true);
+    try { const id = await createScheduledRepair(form); await refresh(id); setForm({ ...emptyForm, shopId: form.shopId }); setShowCreate(false); }
+    catch (caught: unknown) { setError(caught instanceof Error ? caught.message : "Scheduled repair could not be created."); }
+    finally { setBusy(false); }
+  }
+
+  return <>
+    <header className="topbar"><div><p className="eyebrow">CORE REPAIR RECORD</p><h2>Repairs</h2><p className="page-description">Create each repair once, then enrich the same record from schedule through delivery.</p></div><button className="primary-button" onClick={() => setShowCreate((value) => !value)} type="button">{showCreate ? "Cancel" : "Add scheduled repair"}</button></header>
+    {error && <section className="panel import-error"><strong>Repair workspace needs attention</strong><p>{error}</p></section>}
+    {showCreate && <section className="panel repair-create"><label>Location<select value={form.shopId} onChange={(event) => setForm({ ...form, shopId: event.target.value })}>{shops.map((shop) => <option key={shop.id} value={shop.id}>{shop.name}</option>)}</select></label><label>RO / workfile number<input value={form.roNumber} onChange={(event) => setForm({ ...form, roNumber: event.target.value })}/></label><label>Drop date<input type="date" value={form.scheduledDate} onChange={(event) => setForm({ ...form, scheduledDate: event.target.value })}/></label><label>Customer<input value={form.customer} onChange={(event) => setForm({ ...form, customer: event.target.value })}/></label><label>Vehicle<input value={form.vehicle} onChange={(event) => setForm({ ...form, vehicle: event.target.value })}/></label><label>VIN<input value={form.vin} onChange={(event) => setForm({ ...form, vin: event.target.value })}/></label><label>Claim<input value={form.claimNumber} onChange={(event) => setForm({ ...form, claimNumber: event.target.value })}/></label><label>Insurer<input value={form.insurance} onChange={(event) => setForm({ ...form, insurance: event.target.value })}/></label><button className="primary-button" disabled={busy} onClick={() => void createRepair()} type="button">Create repair</button></section>}
+    <section className="repair-lifecycle-metrics">{lifecycle.map((status) => <article className="card" key={status}><p>{status}</p><strong>{repairs.filter((repair) => repair.lifecycle_status === status).length}</strong><small>{status === "wip" ? "Active production" : "Lifecycle records"}</small></article>)}</section>
+    <section className="panel repair-filters"><input aria-label="Search repairs" placeholder="Search RO, customer, vehicle, VIN, or claim" value={search} onChange={(event) => setSearch(event.target.value)}/><select aria-label="Filter by shop" value={shopFilter} onChange={(event) => setShopFilter(event.target.value)}><option value="all">All accessible shops</option>{shops.map((shop) => <option key={shop.id} value={shop.id}>{shop.name}</option>)}</select><select aria-label="Filter by lifecycle" value={statusFilter} onChange={(event) => setStatusFilter(event.target.value)}><option value="active">Active repairs</option><option value="all">All lifecycle stages</option>{lifecycle.map((status) => <option key={status} value={status}>{status}</option>)}</select></section>
+    <div className="repair-workspace-layout"><section className="repair-card-list">{filtered.length === 0 ? <div className="panel"><p>No repairs match these filters.</p></div> : filtered.map((repair) => <button className={selectedId === repair.id ? "repair-rich-card active" : "repair-rich-card"} key={repair.id} onClick={() => setSelectedId(repair.id)} type="button"><div><span className={`repair-lifecycle-badge ${repair.lifecycle_status}`}>{repair.lifecycle_status}</span><strong>RO {repair.ro_number}</strong><small>{shopName(repair.shop_id)}</small></div><h3>{repair.vehicle ?? "Vehicle not recorded"}</h3><p>{repair.customer ?? "Customer not recorded"} · {repair.insurance ?? "Insurer not recorded"}</p><div className="repair-card-facts"><span>{repair.labor_hours.toFixed(1)} labor hrs</span><span>{repair.pre_tax_total.toLocaleString("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 })}</span><span>{repair.estimator ?? "No estimator"}</span><span>{repair.technician ?? "No technician"}</span></div></button>)}</section>
+      <section className="panel repair-workspace-detail">{!selected ? <p>Select a repair to open its workspace.</p> : <><div className="panel-header"><div><p className="section-label">REPAIR WORKSPACE</p><h3>RO {selected.ro_number} · {selected.vehicle}</h3><p>{selected.customer} · {shopName(selected.shop_id)}</p></div>{nextStatus ? <button className="primary-button" disabled={busy} onClick={() => void advance()} type="button">Advance to {nextStatus}</button> : <span className="repair-delivered">Delivered</span>}</div><div className="repair-lifecycle-rail">{lifecycle.map((status, index) => <div className={index <= statusIndex ? "complete" : ""} key={status}><span>{index + 1}</span><strong>{status}</strong></div>)}</div><div className="repair-data-grid"><div><span>Production</span><p>Stage: {selected.stage ?? "Unknown"}</p><p>Estimator: {selected.estimator ?? "Unassigned"}</p><p>Technician: {selected.technician ?? "Unassigned"}</p><p>Labor: {selected.labor_hours.toFixed(1)} hours</p></div><div><span>Financial</span><p>Estimate: {selected.pre_tax_total.toLocaleString("en-US", { style: "currency", currency: "USD" })}</p><p>Insurer: {selected.insurance ?? "Not recorded"}</p><p>Claim: {selected.claim_number ?? "Not recorded"}</p><p>Workfile: {selected.workfile_id ?? "Not recorded"}</p></div><div><span>Lifecycle</span><p>Scheduled: {selected.scheduled_date ?? "Not recorded"}</p><p>Arrived: {selected.arrival_date ?? "Not recorded"}</p><p>QC: {selected.qc_at ? new Date(selected.qc_at).toLocaleString() : "Not reached"}</p><p>Delivered: {selected.delivered_at ? new Date(selected.delivered_at).toLocaleString() : "Not reached"}</p></div></div><div className="repair-edit-grid"><label>VIN<input defaultValue={selected.vin ?? ""} key={`${selected.id}-vin`} onBlur={(event) => void saveField({ vin: event.target.value || null })}/></label><label>Claim number<input defaultValue={selected.claim_number ?? ""} key={`${selected.id}-claim`} onBlur={(event) => void saveField({ claim_number: event.target.value || null })}/></label><label>Workfile ID<input defaultValue={selected.workfile_id ?? ""} key={`${selected.id}-workfile`} onBlur={(event) => void saveField({ workfile_id: event.target.value || null })}/></label><label>Scheduled date<input defaultValue={selected.scheduled_date ?? ""} key={`${selected.id}-scheduled`} type="date" onBlur={(event) => void saveField({ scheduled_date: event.target.value || null })}/></label></div><label className="repair-notes">Repair notes<textarea defaultValue={selected.lifecycle_notes ?? ""} key={`${selected.id}-notes`} onBlur={(event) => void saveField({ lifecycle_notes: event.target.value || null })}/></label><div className="repair-history"><p className="section-label">AUDIT TRAIL</p>{events.length === 0 ? <p>No lifecycle events recorded yet.</p> : events.map((event) => <article key={event.id}><div><strong>{event.event_type.replaceAll("_", " ")}</strong><span>{new Date(event.created_at).toLocaleString()}</span></div>{event.old_value !== null || event.new_value !== null ? <p>{event.old_value ?? "—"} → {event.new_value ?? "—"}</p> : null}</article>)}</div></>}</section></div>
+  </>;
+}
+
+export default RepairWorkspace;
