@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { buildIntelligenceSnapshot } from "./engine/intelligence";
 import {
-  useImportedWip,
+  loadImportedWip,
   normalizeRepairOrders,
 } from "./services/importedData";
 
@@ -14,7 +14,7 @@ function statusClass(status: string) {
 }
 
 function IntelligenceDiagnostics() {
-  const importedRecord = useImportedWip();
+  const importedRecord = useMemo(loadImportedWip, []);
 
   const repairOrders = useMemo(
     () => normalizeRepairOrders(importedRecord),

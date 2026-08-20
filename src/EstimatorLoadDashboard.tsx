@@ -6,7 +6,7 @@ import type {
   EstimatorLoadStatus,
 } from "./engine/estimator/estimatorTypes";
 import {
-  useImportedWip,
+  loadImportedWip,
   normalizeRepairOrders,
 } from "./services/importedData";
 
@@ -31,7 +31,7 @@ function formatCurrency(value: number) {
 }
 
 function EstimatorLoadDashboard() {
-  const importedRecord = useImportedWip();
+  const importedRecord = useMemo(loadImportedWip, []);
 
   const repairOrders = useMemo(
     () => normalizeRepairOrders(importedRecord),

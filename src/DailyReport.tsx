@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { buildIntelligenceSnapshot } from "./engine/intelligence";
 import {
-  useImportedWip,
+  loadImportedWip,
   normalizeRepairOrders,
 } from "./services/importedData";
 import {
@@ -23,7 +23,7 @@ function alertClass(severity: string) {
 }
 
 function DailyReport() {
-  const importedRecord = useImportedWip();
+  const importedRecord = useMemo(loadImportedWip, []);
 
   const repairOrders = useMemo(
     () => normalizeRepairOrders(importedRecord),

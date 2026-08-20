@@ -6,7 +6,7 @@ import {
 
 import type { RiskLevel } from "./engine/operationsEngine";
 import {
-  useImportedWip,
+  loadImportedWip,
   normalizeRepairOrders,
 } from "./services/importedData";
 
@@ -31,7 +31,7 @@ function formatCurrency(value: number) {
 }
 
 function MissionControl() {
-  const importedRecord = useImportedWip();
+  const importedRecord = useMemo(loadImportedWip, []);
 
   const repairOrders = useMemo(
     () => normalizeRepairOrders(importedRecord),

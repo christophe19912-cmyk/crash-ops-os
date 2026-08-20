@@ -5,11 +5,12 @@ import WipIntelligence from "./WipIntelligence";
 import DailyReport from "./DailyReport";
 import MissionControl from "./MissionControl";
 import ProductionBoard from "./ProductionBoard";
-import IntelligenceDiagnostics from "./IntelligenceDiagnostics";
 import WipCapacitySettings from "./WipCapacitySettings";
 import SchedulingBoard from "./SchedulingBoard";
+import EstimateIntake from "./EstimateIntake";
 import EstimatorLoadDashboard from "./EstimatorLoadDashboard";
 import EstimatorSettings from "./EstimatorSettings";
+import TechnicianSettings from "./TechnicianSettings";
 import BetaSetup from "./BetaSetup";
 import OrganizationModule from "./OrganizationModule";
 import LeadershipDashboard from "./LeadershipDashboard";
@@ -31,10 +32,12 @@ type Page =
   | "Production Board"
   | "WIP Capacity"
   | "Scheduling"
+  | "Estimate Intake"
   | "KPIs"
   | "Reports"
   | "Estimator Load"
   | "Estimator Settings"
+  | "Technician Settings"
   | "Beta Setup"
   | "Administration"
   | "Organization Company"
@@ -42,12 +45,6 @@ type Page =
   | "Organization Users"
   | "Organization Roles"
   | "Organization Integrations";
-
-
-
-
-
-
 
 const navigationItems: Page[] = [
   "Mission Control",
@@ -58,10 +55,12 @@ const navigationItems: Page[] = [
   "Production Board",
   "WIP Capacity",
   "Scheduling",
+  "Estimate Intake",
   "Estimator Load",
   "KPIs",
   "Reports",
   "Estimator Settings",
+  "Technician Settings",
   "Beta Setup",
   "Administration",
   "Organization Company",
@@ -71,10 +70,6 @@ const navigationItems: Page[] = [
   "Organization Integrations",
 ];
 
-
-
-
-
 function PlaceholderPage({ title }: { title: string }) {
   return (
     <>
@@ -82,19 +77,30 @@ function PlaceholderPage({ title }: { title: string }) {
         <div>
           <p className="eyebrow">CRASH OPS OS</p>
           <h2>{title}</h2>
-          <p className="page-description">
-            This module is connected and ready for continued
-            development.
-          </p>
+          <p className="page-description">This module is connected and ready for continued development.</p>
         </div>
       </header>
-
       <section className="panel placeholder-panel">
         <h3>{title}</h3>
-        <p>
-          Navigation is working. This module will be developed after
-          the dAIly Report workflow is validated.
-        </p>
+        <p>Navigation is working. This module will be developed after the dAIly Report workflow is validated.</p>
+      </section>
+    </>
+  );
+}
+
+function KpiPlaceholder() {
+  return (
+    <>
+      <header className="topbar">
+        <div>
+          <p className="eyebrow">PERFORMANCE MEASUREMENT</p>
+          <h2>KPIs</h2>
+          <p className="page-description">KPI development is intentionally paused until each metric, source system, and calculation method is approved.</p>
+        </div>
+      </header>
+      <section className="panel placeholder-panel">
+        <h3>No KPI calculations are active</h3>
+        <p>This area will remain blank so operational intelligence and planning assumptions are not presented as finalized performance KPIs.</p>
       </section>
     </>
   );
@@ -106,113 +112,56 @@ function App() {
   const organization = useOrganization();
   const role = useRole();
   const contextStatus = useApplicationContextStatus();
-  const [activePage, setActivePage] =
-    useState<Page>("Mission Control");
+  const [activePage, setActivePage] = useState<Page>("Mission Control");
 
   const roleLabel = role
     ? role.split("_").map((word) => word[0].toUpperCase() + word.slice(1)).join(" ")
     : "Member";
 
   function renderPage() {
-    if (activePage === "Mission Control") {
-      return <MissionControl />;
-    }
-
-    if (activePage === "Repairs") {
-      return <RepairWorkspace />;
-    }
-
-    if (activePage === "dAIly Report") {
-      return <DailyReport />;
-    }
-
-    if (activePage === "Leadership") {
-      return <LeadershipDashboard />;
-    }
-
-    if (activePage === "Production Board") {
-      return <ProductionBoard />;
-    }
-
-    if (activePage === "Import Center") {
-      return <ImportCenter />;
-    }
-
-    if (activePage === "WIP Capacity") {
-      return <WipIntelligence />;
-    }
-
-    if (activePage === "KPIs") {
-      return <IntelligenceDiagnostics />;
-    }
-
-    if (activePage === "Estimator Load") {
-      return <EstimatorLoadDashboard />;
-    }
-
-    if (activePage === "Estimator Settings") {
-      return <EstimatorSettings />;
-    }
-
-    if (activePage === "Beta Setup") {
-      return <BetaSetup />;
-    }
-
-    if (activePage === "Administration") {
-      return <WipCapacitySettings />;
-    }
-
-    if (activePage === "Scheduling") {
-      return <SchedulingBoard />;
-    }
-
+    if (activePage === "Mission Control") return <MissionControl />;
+    if (activePage === "Repairs") return <RepairWorkspace />;
+    if (activePage === "dAIly Report") return <DailyReport />;
+    if (activePage === "Leadership") return <LeadershipDashboard />;
+    if (activePage === "Production Board") return <ProductionBoard />;
+    if (activePage === "Import Center") return <ImportCenter />;
+    if (activePage === "WIP Capacity") return <WipIntelligence />;
+    if (activePage === "KPIs") return <KpiPlaceholder />;
+    if (activePage === "Estimator Load") return <EstimatorLoadDashboard />;
+    if (activePage === "Estimator Settings") return <EstimatorSettings />;
+    if (activePage === "Technician Settings") return <TechnicianSettings />;
+    if (activePage === "Beta Setup") return <BetaSetup />;
+    if (activePage === "Administration") return <WipCapacitySettings />;
+    if (activePage === "Scheduling") return <SchedulingBoard />;
+    if (activePage === "Estimate Intake") return <EstimateIntake onScheduled={() => setActivePage("Scheduling")} />;
     if (activePage.startsWith("Organization ")) {
       return <OrganizationModule page={activePage.replace("Organization ", "") as "Company" | "Centers" | "Users" | "Roles" | "Integrations"} />;
     }
-
-
     return <PlaceholderPage title={activePage} />;
   }
+
+  const operationsItems = navigationItems.filter((item) => !item.startsWith("Organization "));
+  const organizationItems = navigationItems.filter((item) => item.startsWith("Organization "));
 
   return (
     <div className="app">
       <aside className="sidebar">
         <div className="brand">
           <div className="brand-mark">CO</div>
-
-          <div>
-            <h1>Crash Ops</h1>
-            <p>Operations System</p>
-          </div>
+          <div><h1>Crash Ops</h1><p>Operations System</p></div>
         </div>
 
         <nav className="navigation">
           <div className="nav-section-label">Operations</div>
-          {navigationItems.slice(0, 14).map((item, index) => (
-            <button
-              className={
-                activePage === item
-                  ? "nav-button active"
-                  : "nav-button"
-              }
-              key={item}
-              onClick={() => setActivePage(item)}
-              type="button"
-            >
-              <span className="nav-icon">
-                {item === "dAIly Report" ? "AI" : index + 1}
-              </span>
+          {operationsItems.map((item, index) => (
+            <button className={activePage === item ? "nav-button active" : "nav-button"} key={item} onClick={() => setActivePage(item)} type="button">
+              <span className="nav-icon">{item === "dAIly Report" ? "AI" : index + 1}</span>
               <span>{item}</span>
             </button>
           ))}
           <div className="nav-section-label">Organization</div>
-          {navigationItems.slice(14).map((item, index) => (
-            <button
-              className={activePage === item ? "nav-button active" : "nav-button"}
-              key={item}
-              onClick={() => setActivePage(item)}
-              type="button"
-            >
+          {organizationItems.map((item, index) => (
+            <button className={activePage === item ? "nav-button active" : "nav-button"} key={item} onClick={() => setActivePage(item)} type="button">
               <span className="nav-icon">O{index + 1}</span>
               <span>{item.replace("Organization ", "")}</span>
             </button>

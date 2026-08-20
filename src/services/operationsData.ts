@@ -57,7 +57,6 @@ export async function persistWipImport(record: ImportedWipRecord, orders: Repair
     organization_id: context.organizationId, shop_id: context.shopId, wip_import_id: imported.id,
     ro_number: order.roNumber, customer: order.customer, vehicle: order.vehicle, stage: order.stage,
     labor_hours: order.laborHours, pre_tax_total: order.preTaxTotal, estimator: order.estimator,
-    technician: order.technician,
     insurance: order.insurance, created_date: nullableDate(order.createdDate), arrival_date: nullableDate(order.arrivalDate),
     completed_date: nullableDate(order.completedDate), vehicle_status: order.vehicleStatus,
     source: record.source, source_metadata: { fileName: record.fileName }, imported_at: record.importedAt,

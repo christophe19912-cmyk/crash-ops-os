@@ -2,12 +2,8 @@ import type {
   ImportedWipRecord,
   RepairOrder,
 } from "../models/RepairOrder";
-import { useSyncExternalStore } from "react";
 
 const STORAGE_KEY = "crashOpsLastWipImport";
-const UPDATED_EVENT = "crash-ops:wip-import-updated";
-let cachedSource: string | null | undefined;
-let cachedRecord: ImportedWipRecord | null = null;
 
 export function cleanNumber(value: unknown) {
   if (value === null || value === undefined) return 0;
@@ -22,46 +18,12 @@ export function loadImportedWip(): ImportedWipRecord | null {
   try {
     const stored = localStorage.getItem(STORAGE_KEY);
 
-    if (stored === cachedSource) return cachedRecord;
-    cachedSource = stored;
+    if (!stored) return null;
 
-    if (!stored) {
-      cachedRecord = null;
-      return null;
-    }
-
-    cachedRecord = JSON.parse(stored) as ImportedWipRecord;
-    return cachedRecord;
+    return JSON.parse(stored) as ImportedWipRecord;
   } catch {
-    cachedRecord = null;
     return null;
   }
-}
-
-export function saveImportedWip(record: ImportedWipRecord): void {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(record));
-  cachedSource = undefined;
-  window.dispatchEvent(new Event(UPDATED_EVENT));
-}
-
-function subscribeToImportedWip(onChange: () => void) {
-  const onStorage = (event: StorageEvent) => {
-    if (event.key === STORAGE_KEY) {
-      cachedSource = undefined;
-      onChange();
-    }
-  };
-  const onUpdated = () => onChange();
-  window.addEventListener("storage", onStorage);
-  window.addEventListener(UPDATED_EVENT, onUpdated);
-  return () => {
-    window.removeEventListener("storage", onStorage);
-    window.removeEventListener(UPDATED_EVENT, onUpdated);
-  };
-}
-
-export function useImportedWip(): ImportedWipRecord | null {
-  return useSyncExternalStore(subscribeToImportedWip, loadImportedWip, () => null);
 }
 
 export function normalizeRepairOrders(

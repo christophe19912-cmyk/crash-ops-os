@@ -8,7 +8,7 @@ import {
   buildIntelligenceSnapshot,
 } from "./engine/intelligence";
 import {
-  useImportedWip,
+  loadImportedWip,
   normalizeRepairOrders,
 } from "./services/importedData";
 import {
@@ -56,7 +56,7 @@ function capacityStatusClass(status: string) {
 }
 
 function SchedulingBoard() {
-  const importedRecord = useImportedWip();
+  const importedRecord = useMemo(loadImportedWip, []);
 
   const repairOrders = useMemo(
     () => normalizeRepairOrders(importedRecord),

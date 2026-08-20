@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 import type { RepairOrder } from "./models/RepairOrder";
 import { buildIntelligenceSnapshot } from "./engine/intelligence";
 import {
-  useImportedWip,
+  loadImportedWip,
   normalizeRepairOrders,
 } from "./services/importedData";
 import { isProductionHold } from "./services/stageDictionary";
@@ -66,7 +66,7 @@ function WipIntelligence() {
   const [selectedOrder, setSelectedOrder] =
     useState<RepairOrder | null>(null);
 
-  const importedRecord = useImportedWip();
+  const importedRecord = useMemo(() => loadImportedWip(), []);
 
   const repairOrders = useMemo(
     () => normalizeRepairOrders(importedRecord),

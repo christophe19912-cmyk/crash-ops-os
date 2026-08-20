@@ -5,7 +5,7 @@ import {
   type RepairIntelligence,
 } from "./engine/intelligence";
 import {
-  useImportedWip,
+  loadImportedWip,
   normalizeRepairOrders,
 } from "./services/importedData";
 import {
@@ -72,7 +72,7 @@ function sortRepairs(
 }
 
 function ProductionBoard() {
-  const importedRecord = useImportedWip();
+  const importedRecord = useMemo(loadImportedWip, []);
 
   const repairOrders = useMemo(
     () => normalizeRepairOrders(importedRecord),
