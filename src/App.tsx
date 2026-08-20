@@ -16,95 +16,61 @@ import OrganizationModule from "./OrganizationModule";
 import LeadershipDashboard from "./LeadershipDashboard";
 import RepairWorkspace from "./RepairWorkspace";
 import { useAuth } from "./auth/AuthProvider";
-import {
-  useApplicationContextStatus,
-  useOrganization,
-  useRole,
-  useUserProfile,
-} from "./auth/ApplicationContext";
+import { useApplicationContextStatus, useOrganization, useRole, useUserProfile } from "./auth/ApplicationContext";
 
 type Page =
-  | "Mission Control"
-  | "Repairs"
-  | "dAIly Report"
-  | "Leadership"
-  | "Import Center"
-  | "Production Board"
-  | "WIP Capacity"
-  | "Scheduling"
-  | "Estimate Intake"
-  | "KPIs"
-  | "Reports"
-  | "Estimator Load"
-  | "Estimator Settings"
-  | "Technician Settings"
-  | "Beta Setup"
-  | "Administration"
-  | "Organization Company"
-  | "Organization Centers"
-  | "Organization Users"
-  | "Organization Roles"
-  | "Organization Integrations";
+  | "Mission Control" | "Repairs" | "Estimate Intake" | "Scheduling" | "Production Board" | "WIP Capacity"
+  | "dAIly Report" | "Leadership" | "Estimator Load" | "Import Center" | "Administration"
+  | "Estimator Settings" | "Technician Settings" | "Beta Setup"
+  | "Organization Company" | "Organization Centers" | "Organization Users" | "Organization Integrations";
 
-const navigationItems: Page[] = [
-  "Mission Control",
-  "Repairs",
-  "dAIly Report",
-  "Leadership",
-  "Import Center",
-  "Production Board",
-  "WIP Capacity",
-  "Scheduling",
-  "Estimate Intake",
-  "Estimator Load",
-  "KPIs",
-  "Reports",
-  "Estimator Settings",
-  "Technician Settings",
-  "Beta Setup",
-  "Administration",
-  "Organization Company",
-  "Organization Centers",
-  "Organization Users",
-  "Organization Roles",
-  "Organization Integrations",
+type NavigationGroup = { label: string; items: Array<{ page: Page; label: string; icon: string }> };
+
+const navigationGroups: NavigationGroup[] = [
+  {
+    label: "Command",
+    items: [
+      { page: "Mission Control", label: "Dashboard", icon: "MC" },
+      { page: "Repairs", label: "Repairs", icon: "RP" },
+    ],
+  },
+  {
+    label: "Repair Flow",
+    items: [
+      { page: "Estimate Intake", label: "AI Intake", icon: "AI" },
+      { page: "Scheduling", label: "Schedule", icon: "SC" },
+      { page: "Production Board", label: "Production", icon: "PB" },
+      { page: "WIP Capacity", label: "WIP & Capacity", icon: "WP" },
+    ],
+  },
+  {
+    label: "Intelligence",
+    items: [
+      { page: "dAIly Report", label: "dAIly Report", icon: "DR" },
+      { page: "Leadership", label: "Leadership", icon: "LD" },
+      { page: "Estimator Load", label: "Estimator Load", icon: "EL" },
+    ],
+  },
+  {
+    label: "Organization",
+    items: [
+      { page: "Organization Company", label: "Company", icon: "CO" },
+      { page: "Organization Centers", label: "Centers", icon: "CE" },
+      { page: "Organization Users", label: "Users", icon: "US" },
+      { page: "Organization Integrations", label: "Integrations", icon: "IN" },
+    ],
+  },
+  {
+    label: "System",
+    items: [
+      { page: "Import Center", label: "Import Center", icon: "IM" },
+      { page: "Administration", label: "Capacity Settings", icon: "CS" },
+      { page: "Estimator Settings", label: "Estimator Settings", icon: "ES" },
+      { page: "Technician Settings", label: "Technician Settings", icon: "TS" },
+      { page: "Beta Setup", label: "Beta Setup", icon: "BT" },
+    ],
+  },
 ];
-
-function PlaceholderPage({ title }: { title: string }) {
-  return (
-    <>
-      <header className="topbar">
-        <div>
-          <p className="eyebrow">CRASH OPS OS</p>
-          <h2>{title}</h2>
-          <p className="page-description">This module is connected and ready for continued development.</p>
-        </div>
-      </header>
-      <section className="panel placeholder-panel">
-        <h3>{title}</h3>
-        <p>Navigation is working. This module will be developed after the dAIly Report workflow is validated.</p>
-      </section>
-    </>
-  );
-}
-
-function KpiPlaceholder() {
-  return (
-    <>
-      <header className="topbar">
-        <div>
-          <p className="eyebrow">PERFORMANCE MEASUREMENT</p>
-          <h2>KPIs</h2>
-          <p className="page-description">KPI development is intentionally paused until each metric, source system, and calculation method is approved.</p>
-        </div>
-      </header>
-      <section className="panel placeholder-panel">
-        <h3>No KPI calculations are active</h3>
-        <p>This area will remain blank so operational intelligence and planning assumptions are not presented as finalized performance KPIs.</p>
-      </section>
-    </>
-  );
-}
 
 function App() {
   const { signOut } = useAuth();
@@ -121,27 +87,23 @@ function App() {
   function renderPage() {
     if (activePage === "Mission Control") return <MissionControl />;
     if (activePage === "Repairs") return <RepairWorkspace />;
+    if (activePage === "Estimate Intake") return <EstimateIntake onScheduled={() => setActivePage("Repairs")} />;
+    if (activePage === "Scheduling") return <SchedulingBoard />;
+    if (activePage === "Production Board") return <ProductionBoard />;
+    if (activePage === "WIP Capacity") return <WipIntelligence />;
     if (activePage === "dAIly Report") return <DailyReport />;
     if (activePage === "Leadership") return <LeadershipDashboard />;
-    if (activePage === "Production Board") return <ProductionBoard />;
-    if (activePage === "Import Center") return <ImportCenter />;
-    if (activePage === "WIP Capacity") return <WipIntelligence />;
-    if (activePage === "KPIs") return <KpiPlaceholder />;
     if (activePage === "Estimator Load") return <EstimatorLoadDashboard />;
+    if (activePage === "Import Center") return <ImportCenter />;
+    if (activePage === "Administration") return <WipCapacitySettings />;
     if (activePage === "Estimator Settings") return <EstimatorSettings />;
     if (activePage === "Technician Settings") return <TechnicianSettings />;
     if (activePage === "Beta Setup") return <BetaSetup />;
-    if (activePage === "Administration") return <WipCapacitySettings />;
-    if (activePage === "Scheduling") return <SchedulingBoard />;
-    if (activePage === "Estimate Intake") return <EstimateIntake onScheduled={() => setActivePage("Scheduling")} />;
     if (activePage.startsWith("Organization ")) {
-      return <OrganizationModule page={activePage.replace("Organization ", "") as "Company" | "Centers" | "Users" | "Roles" | "Integrations"} />;
+      return <OrganizationModule page={activePage.replace("Organization ", "") as "Company" | "Centers" | "Users" | "Integrations"} />;
     }
-    return <PlaceholderPage title={activePage} />;
+    return null;
   }
-
-  const operationsItems = navigationItems.filter((item) => !item.startsWith("Organization "));
-  const organizationItems = navigationItems.filter((item) => item.startsWith("Organization "));
 
   return (
     <div className="app">
@@ -152,19 +114,21 @@ function App() {
         </div>
 
         <nav className="navigation">
-          <div className="nav-section-label">Operations</div>
-          {operationsItems.map((item, index) => (
-            <button className={activePage === item ? "nav-button active" : "nav-button"} key={item} onClick={() => setActivePage(item)} type="button">
-              <span className="nav-icon">{item === "dAIly Report" ? "AI" : index + 1}</span>
-              <span>{item}</span>
-            </button>
-          ))}
-          <div className="nav-section-label">Organization</div>
-          {organizationItems.map((item, index) => (
-            <button className={activePage === item ? "nav-button active" : "nav-button"} key={item} onClick={() => setActivePage(item)} type="button">
-              <span className="nav-icon">O{index + 1}</span>
-              <span>{item.replace("Organization ", "")}</span>
-            </button>
+          {navigationGroups.map((group) => (
+            <div key={group.label}>
+              <div className="nav-section-label">{group.label}</div>
+              {group.items.map((item) => (
+                <button
+                  className={activePage === item.page ? "nav-button active" : "nav-button"}
+                  key={item.page}
+                  onClick={() => setActivePage(item.page)}
+                  type="button"
+                >
+                  <span className="nav-icon">{item.icon}</span>
+                  <span>{item.label}</span>
+                </button>
+              ))}
+            </div>
           ))}
         </nav>
 
