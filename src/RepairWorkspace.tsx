@@ -23,7 +23,9 @@ function money(value: number) {
   return value.toLocaleString("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 });
 }
 
-function RepairWorkspace() {
+type RepairWorkspaceProps = { initialRepairId?: string | null };
+
+function RepairWorkspace({ initialRepairId }: RepairWorkspaceProps) {
   const [repairs, setRepairs] = useState<RepairWorkspaceRecord[]>([]);
   const [shops, setShops] = useState<RepairWorkspaceShop[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -49,11 +51,20 @@ function RepairWorkspace() {
     let active = true;
     void loadRepairWorkspace().then((data) => {
       if (!active) return;
-      setRepairs(data.repairs); setShops(data.shops); setSelectedId(data.repairs[0]?.id ?? null);
+      setRepairs(data.repairs); setShops(data.shops);
+      setSelectedId(data.repairs.some((repair) => repair.id === initialRepairId) ? initialRepairId! : data.repairs[0]?.id ?? null);
       setForm((current) => ({ ...current, shopId: data.shops[0]?.id ?? "" }));
     }).catch((caught: unknown) => { if (active) setError(caught instanceof Error ? caught.message : "Repair workspace could not be loaded."); });
     return () => { active = false; };
-  }, []);
+  }, [initialRepairId]);
+
+  function openWorkFile(repair: RepairWorkspaceRecord) {
+    const url = new URL(window.location.href);
+    url.search = "";
+    url.searchParams.set("page", "repairs");
+    url.searchParams.set("ro", repair.id);
+    window.open(url.toString(), `_blank`, "noopener,noreferrer");
+  }
 
   useEffect(() => {
     if (!selectedId) return;
@@ -148,14 +159,15 @@ function RepairWorkspace() {
         const bodyHours = payloadNumber(repair, "bodyLaborHours");
         const paintHours = payloadNumber(repair, "paintLaborHours");
         const parts = payloadNumber(repair, "partsTotal");
-        return <button className={selectedId === repair.id ? "repair-rich-card active" : "repair-rich-card"} key={repair.id} onClick={() => setSelectedId(repair.id)} type="button">
+        return <article className={selectedId === repair.id ? "repair-rich-card active" : "repair-rich-card"} key={repair.id}>
           {photo && <img src={photo} alt="Vehicle" style={{ width: "100%", height: 150, objectFit: "cover", borderRadius: 10, marginBottom: 10 }} />}
           <div><span className={`repair-lifecycle-badge ${payloadText(repair, "fileDisposition") || repair.lifecycle_status}`}>{payloadText(repair, "fileDisposition") || repair.lifecycle_status}</span><strong>RO {repair.ro_number}</strong><small>{shopName(repair.shop_id)}</small></div>
           <h3>{repair.vehicle ?? "Vehicle not recorded"}</h3>
           <p>{repair.customer ?? "Customer not recorded"} · {repair.insurance ?? "Insurer not recorded"}</p>
           <div className="repair-card-facts"><span>{repair.labor_hours.toFixed(1)} total hrs</span><span>{money(repair.pre_tax_total)}</span><span>{bodyHours.toFixed(1)} body / {paintHours.toFixed(1)} paint</span><span>{parts ? `${money(parts)} parts` : repair.estimator ?? "No estimator"}</span></div>
           {repair.scheduled_date && <small>Drop: {repair.scheduled_date}</small>}
-        </button>;
+          <button className="secondary-button repair-open-button" onClick={() => openWorkFile(repair)} type="button">Open work file in new tab</button>
+        </article>;
       })}</section>
 
       <section className="panel repair-workspace-detail">{!selected ? <p>Select a repair to open its workspace.</p> : <>
