@@ -144,6 +144,39 @@ export async function updatePartsSales(repairOrderId: string, partsSales: number
   if (error) throw supabaseError(error, "Parts sales could not be saved.");
 }
 
+export type RepairDisposition = "closed" | "cancelled";
+export async function setRepairDisposition(repairOrderId: string, disposition: RepairDisposition): Promise<void> {
+  const current = client();
+  const { data, error: loadError } = await current.from("repair_orders")
+    .select("source_payload, pre_tax_total").eq("id", repairOrderId)
+    .single<{ source_payload: Record<string, unknown>; pre_tax_total: number }>();
+  if (loadError) throw supabaseError(loadError, "The repair work file could not be loaded.");
+  const now = new Date();
+  const changes: Record<string, unknown> = {
+    source_payload: {
+      ...(data.source_payload ?? {}), fileDisposition: disposition, dispositionAt: now.toISOString(),
+      saleStatus: disposition === "closed" ? "completed" : "cancelled",
+      completedSaleAmount: disposition === "closed" ? Number(data.pre_tax_total || 0) : 0,
+    },
+  };
+  if (disposition === "closed") {
+    changes.lifecycle_status = "delivered";
+    changes.completed_date = now.toISOString().slice(0, 10);
+    changes.delivered_at = now.toISOString();
+  }
+  const { error } = await current.from("repair_orders").update(changes).eq("id", repairOrderId);
+  if (error) throw supabaseError(error, `The repair could not be ${disposition}.`);
+  const { data: auth } = await current.auth.getUser();
+  const { data: repair } = await current.from("repair_orders")
+    .select("organization_id, shop_id").eq("id", repairOrderId)
+    .single<{ organization_id: string; shop_id: string }>();
+  if (repair) await current.from("repair_order_events").insert({
+    organization_id: repair.organization_id, shop_id: repair.shop_id,
+    repair_order_id: repairOrderId, event_type: disposition === "closed" ? "job_closed" : "job_cancelled",
+    new_value: disposition, metadata: { source: "repair_workspace" }, created_by: auth.user?.id ?? null,
+  });
+}
+
 export async function advanceRepairLifecycle(
   repairOrderId: string, status: RepairLifecycleStatus,
 ): Promise<void> {
