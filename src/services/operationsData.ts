@@ -53,13 +53,28 @@ export async function persistWipImport(record: ImportedWipRecord, orders: Repair
   }).select("id").single<{ id: string }>();
   if (importError) throw importError;
 
-  const payload = orders.map((order) => ({
+  const canonicalOrders = Array.from(
+    new Map(
+      orders
+        .filter((order) => order.roNumber.trim())
+        .map((order) => [order.roNumber.trim().toLowerCase(), order]),
+    ).values(),
+  );
+  const payload = canonicalOrders.map((order) => ({
     organization_id: context.organizationId, shop_id: context.shopId, wip_import_id: imported.id,
     ro_number: order.roNumber, customer: order.customer, vehicle: order.vehicle, stage: order.stage,
     labor_hours: order.laborHours, pre_tax_total: order.preTaxTotal, estimator: order.estimator,
     insurance: order.insurance, created_date: nullableDate(order.createdDate), arrival_date: nullableDate(order.arrivalDate),
     completed_date: nullableDate(order.completedDate), vehicle_status: order.vehicleStatus,
     source: record.source, source_metadata: { fileName: record.fileName }, imported_at: record.importedAt,
+    source_payload: {
+      source: "wip_import", fileName: record.fileName, technician: order.technician,
+      customer: order.customer, vehicle: order.vehicle, stage: order.stage,
+      estimator: order.estimator, insurance: order.insurance,
+      laborHours: order.laborHours, preTaxTotal: order.preTaxTotal,
+      createdDate: order.createdDate, arrivalDate: order.arrivalDate,
+      completedDate: order.completedDate, vehicleStatus: order.vehicleStatus,
+    },
   }));
   const { error } = await supabase.from("repair_orders").upsert(payload, { onConflict: "shop_id,ro_number" });
   if (error) throw error;
