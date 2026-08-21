@@ -52,13 +52,25 @@ function client() {
   return supabase;
 }
 
+function supabaseError(error: unknown, fallback: string): Error {
+  if (error instanceof Error) return error;
+  if (error && typeof error === "object") {
+    const value = error as { message?: string; details?: string; hint?: string; code?: string };
+    const parts = [value.message, value.details, value.hint].filter(Boolean);
+    if (parts.length) return new Error(parts.join(" · "));
+    if (value.code) return new Error(`${fallback} (${value.code})`);
+  }
+  return new Error(fallback);
+}
+
 async function currentOrganizationId(): Promise<string> {
   const current = client();
   const { data: auth } = await current.auth.getUser();
   if (!auth.user) throw new Error("Authentication is required.");
   const { data: profile, error } = await current.from("profiles")
     .select("organization_id").eq("id", auth.user.id).single<{ organization_id: string }>();
-  if (error) throw error;
+  if (error) throw supabaseError(error, "Your organization profile could not be loaded.");
+  if (!profile?.organization_id) throw new Error("Your user profile is not assigned to an organization.");
   return profile.organization_id;
 }
 
@@ -70,7 +82,7 @@ export async function loadRepairWorkspace(): Promise<{
     client().from("shops").select("id, name").order("name").returns<RepairWorkspaceShop[]>(),
   ]);
   const error = repairs.error ?? shops.error;
-  if (error) throw error;
+  if (error) throw supabaseError(error, "Repair workspace could not be loaded.");
   return { repairs: repairs.data ?? [], shops: shops.data ?? [] };
 }
 
@@ -79,7 +91,7 @@ export async function loadRepairLifecycleEvents(repairOrderId: string): Promise<
     .select("id, event_type, old_value, new_value, metadata, created_at")
     .eq("repair_order_id", repairOrderId).order("created_at", { ascending: false })
     .returns<RepairLifecycleEvent[]>();
-  if (error) throw error;
+  if (error) throw supabaseError(error, "Repair history could not be loaded.");
   return data ?? [];
 }
 
@@ -89,7 +101,7 @@ export async function advanceRepairLifecycle(
   const { error } = await client().rpc("advance_repair_lifecycle", {
     requested_repair_order_id: repairOrderId, requested_status: status,
   });
-  if (error) throw error;
+  if (error) throw supabaseError(error, "Repair could not advance.");
 }
 
 export async function updateRepairWorkspace(
@@ -97,7 +109,7 @@ export async function updateRepairWorkspace(
   changes: Partial<Pick<RepairWorkspaceRecord, "vin" | "claim_number" | "workfile_id" | "scheduled_date" | "lifecycle_notes">>,
 ): Promise<void> {
   const { error } = await client().from("repair_orders").update(changes).eq("id", repairOrderId);
-  if (error) throw error;
+  if (error) throw supabaseError(error, "Repair details could not be saved.");
 }
 
 export async function createScheduledRepair(input: {
@@ -113,7 +125,7 @@ export async function createScheduledRepair(input: {
     claim_number: input.claimNumber.trim() || null, lifecycle_status: "scheduled",
     stage: "SCHEDULED", source_payload: { source: "manual_repair_workspace" },
   }).select("id").single<{ id: string }>();
-  if (error) throw error;
+  if (error) throw supabaseError(error, "Scheduled repair could not be created.");
   return data.id;
 }
 
@@ -122,7 +134,7 @@ export async function createRepairFromEstimate(input: EstimateRepairInput): Prom
   const { data: shops, error: shopsError } = await client().from("shops")
     .select("id, name").eq("organization_id", organizationId).order("name")
     .returns<RepairWorkspaceShop[]>();
-  if (shopsError) throw shopsError;
+  if (shopsError) throw supabaseError(shopsError, "Repair locations could not be loaded.");
 
   const normalized = input.shopName.trim().toLowerCase();
   const shop = (shops ?? []).find((candidate) => candidate.name.trim().toLowerCase() === normalized) ?? shops?.[0];
@@ -148,10 +160,7 @@ export async function createRepairFromEstimate(input: EstimateRepairInput): Prom
     estimateFileNames: input.estimateFileNames ?? [],
   };
 
-  const { data, error } = await client().from("repair_orders").insert({
-    organization_id: organizationId,
-    shop_id: shop.id,
-    ro_number: roNumber,
+  const repairValues = {
     customer: input.customer.trim() || null,
     vehicle: input.vehicle.trim() || null,
     vin: input.vin.trim() || null,
@@ -162,15 +171,34 @@ export async function createRepairFromEstimate(input: EstimateRepairInput): Prom
     labor_hours: input.totalLaborHours || 0,
     pre_tax_total: input.totalCostOfRepairs || 0,
     scheduled_date: input.scheduledDate || null,
-    lifecycle_status: "scheduled",
-    stage: "SCHEDULED",
     lifecycle_notes: input.notes?.trim() || null,
     source_payload: sourcePayload,
+  };
+
+  const { data: existing, error: existingError } = await client().from("repair_orders")
+    .select("id, lifecycle_status")
+    .eq("shop_id", shop.id)
+    .eq("ro_number", roNumber)
+    .maybeSingle<{ id: string; lifecycle_status: RepairLifecycleStatus }>();
+  if (existingError) throw supabaseError(existingError, "Crash Ops could not check for an existing repair.");
+
+  if (existing) {
+    const { error: updateError } = await client().from("repair_orders")
+      .update(repairValues)
+      .eq("id", existing.id);
+    if (updateError) throw supabaseError(updateError, "The existing repair was found, but estimate data could not be attached.");
+    return existing.id;
+  }
+
+  const { data, error } = await client().from("repair_orders").insert({
+    organization_id: organizationId,
+    shop_id: shop.id,
+    ro_number: roNumber,
+    ...repairValues,
+    lifecycle_status: "scheduled",
+    stage: "SCHEDULED",
   }).select("id").single<{ id: string }>();
 
-  if (error) {
-    if (error.code === "23505") throw new Error(`Repair ${roNumber} already exists for ${shop.name}.`);
-    throw error;
-  }
+  if (error) throw supabaseError(error, `Repair ${roNumber} could not be created.`);
   return data.id;
 }
