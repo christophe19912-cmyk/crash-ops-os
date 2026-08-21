@@ -3316,3 +3316,8 @@ button {
 .parts-sales-row { display: flex; gap: 10px; }
 .parts-sales-row input { flex: 1; }
 @media (max-width: 900px) { .parts-workspace-layout { grid-template-columns: 1fr; } .parts-ro-list { max-height: 38vh; } }
+.repair-terminal-actions { display: flex; align-items: center; justify-content: flex-end; flex-wrap: wrap; gap: 8px; }
+.danger-button { padding: 10px 15px; border: 1px solid #b91c1c; border-radius: 10px; background: #7f1d1d; color: #fff; cursor: pointer; }
+.danger-button:hover { background: #991b1b; }
+.repair-lifecycle-badge.closed { background: rgba(100,116,139,.18); color: #cbd5e1; }
+.repair-lifecycle-badge.cancelled { background: rgba(239,68,68,.16); color: #fca5a5; }
