@@ -3258,7 +3258,7 @@ button {
 .repair-filters { display: grid; gap: 0.75rem; grid-template-columns: 2fr 1fr 1fr; margin-bottom: 1rem; }
 .repair-workspace-layout { display: grid; gap: 1rem; grid-template-columns: minmax(300px, 0.8fr) minmax(550px, 1.5fr); }
 .repair-card-list { align-self: start; display: grid; gap: 0.75rem; }
-.repair-rich-card { background: #fff; border: 1px solid #e2e8f0; border-radius: 16px; box-shadow: 0 8px 24px rgba(15,23,42,.06); cursor: pointer; display: grid; gap: 0.55rem; padding: 1rem; text-align: left; }
+.repair-rich-card { background: #fff; border: 1px solid #e2e8f0; border-radius: 16px; box-shadow: 0 8px 24px rgba(15,23,42,.06); display: grid; gap: 0.55rem; padding: 1rem; text-align: left; }
 .repair-rich-card.active { border-color: #2563eb; box-shadow: 0 10px 30px rgba(37,99,235,.14); }
 .repair-rich-card > div:first-child { align-items: center; display: flex; gap: 0.55rem; }
 .repair-rich-card > div:first-child small { margin-left: auto; }
@@ -3270,6 +3270,7 @@ button {
 .repair-lifecycle-badge.delivered, .repair-delivered { background: #dcfce7; color: #166534; }
 .repair-card-facts { display: grid; gap: .35rem; grid-template-columns: 1fr 1fr; }
 .repair-card-facts span { background: #f8fafc; border-radius: 8px; color: #475569; font-size: .75rem; padding: .4rem; }
+.repair-open-button { justify-self: stretch; margin-top: .35rem; width: 100%; }
 .repair-delivered { border-radius: 999px; font-size: .72rem; font-weight: 900; padding: .55rem .8rem; text-transform: uppercase; }
 .repair-lifecycle-rail { display: grid; grid-template-columns: repeat(5, 1fr); margin: 1rem 0; }
 .repair-lifecycle-rail > div { border-top: 4px solid #e2e8f0; display: grid; gap: .3rem; padding-top: .6rem; text-transform: capitalize; }
