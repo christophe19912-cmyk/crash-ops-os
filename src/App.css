@@ -3258,18 +3258,18 @@ button {
 .repair-filters { display: grid; gap: 0.75rem; grid-template-columns: 2fr 1fr 1fr; margin-bottom: 1rem; }
 .repair-workspace-layout { display: grid; gap: 1rem; grid-template-columns: minmax(300px, 0.8fr) minmax(550px, 1.5fr); }
 .repair-card-list { align-self: start; display: grid; gap: 0.75rem; }
-.repair-rich-card { background: #fff; border: 1px solid #e2e8f0; border-radius: 16px; box-shadow: 0 8px 24px rgba(15,23,42,.06); display: grid; gap: 0.55rem; padding: 1rem; text-align: left; }
+.repair-rich-card { background: #0f172a; border: 1px solid #263449; border-radius: 16px; box-shadow: 0 8px 24px rgba(0,0,0,.16); display: grid; gap: 0.55rem; padding: 1rem; text-align: left; }
 .repair-rich-card.active { border-color: #2563eb; box-shadow: 0 10px 30px rgba(37,99,235,.14); }
 .repair-rich-card > div:first-child { align-items: center; display: flex; gap: 0.55rem; }
 .repair-rich-card > div:first-child small { margin-left: auto; }
 .repair-rich-card h3, .repair-rich-card p { margin: 0; }
-.repair-rich-card p, .repair-rich-card small { color: #64748b; }
+.repair-rich-card p, .repair-rich-card small { color: #94a3b8; }
 .repair-lifecycle-badge { background: #e2e8f0; border-radius: 999px; font-size: .65rem; font-weight: 900; padding: .3rem .5rem; text-transform: uppercase; }
 .repair-lifecycle-badge.wip { background: #dbeafe; color: #1d4ed8; }
 .repair-lifecycle-badge.qc { background: #fef3c7; color: #92400e; }
 .repair-lifecycle-badge.delivered, .repair-delivered { background: #dcfce7; color: #166534; }
 .repair-card-facts { display: grid; gap: .35rem; grid-template-columns: 1fr 1fr; }
-.repair-card-facts span { background: #f8fafc; border-radius: 8px; color: #475569; font-size: .75rem; padding: .4rem; }
+.repair-card-facts span { background: #172033; border-radius: 8px; color: #cbd5e1; font-size: .75rem; padding: .4rem; }
 .repair-open-button { justify-self: stretch; margin-top: .35rem; width: 100%; }
 .repair-delivered { border-radius: 999px; font-size: .72rem; font-weight: 900; padding: .55rem .8rem; text-transform: uppercase; }
 .repair-lifecycle-rail { display: grid; grid-template-columns: repeat(5, 1fr); margin: 1rem 0; }
@@ -3278,9 +3278,9 @@ button {
 .repair-lifecycle-rail span { background: #e2e8f0; border-radius: 50%; display: grid; font-size: .7rem; height: 24px; place-items: center; width: 24px; }
 .repair-lifecycle-rail .complete span { background: #2563eb; color: #fff; }
 .repair-data-grid { display: grid; gap: .75rem; grid-template-columns: repeat(3, 1fr); }
-.repair-data-grid > div { background: #f8fafc; border-radius: 12px; padding: .8rem; }
-.repair-data-grid span { color: #64748b; font-size: .7rem; font-weight: 900; text-transform: uppercase; }
-.repair-data-grid p { margin: .45rem 0 0; }
+.repair-data-grid > div { background: #111827; border: 1px solid #263449; border-radius: 12px; padding: 1rem; }
+.repair-data-grid span { color: #93c5fd; font-size: .7rem; font-weight: 900; letter-spacing: .06em; text-transform: uppercase; }
+.repair-data-grid p { color: #cbd5e1; line-height: 1.45; margin: .45rem 0 0; }
 .repair-edit-grid { display: grid; gap: .75rem; grid-template-columns: repeat(4, 1fr); margin-top: 1rem; }
 .repair-notes { margin-top: 1rem; }
 .repair-notes textarea { min-height: 80px; }
@@ -3292,7 +3292,7 @@ button {
 @media (max-width: 700px) { .repair-lifecycle-metrics, .repair-filters, .repair-data-grid, .repair-edit-grid { grid-template-columns: 1fr; } .repair-create { grid-template-columns: 1fr; } }
 .workfile-costing { margin-top: 24px; border-top: 1px solid var(--border); padding-top: 20px; }
 .workfile-total-cards { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; margin: 14px 0; }
-.workfile-total-cards article { padding: 14px; border: 1px solid var(--border); border-radius: 12px; background: var(--surface-soft, #f8fafc); display: grid; gap: 5px; }
+.workfile-total-cards article { padding: 14px; border: 1px solid #263449; border-radius: 12px; background: #111827; display: grid; gap: 5px; }
 .workfile-total-cards span, .workfile-total-cards small { color: var(--text-muted, #64748b); }
 .workfile-total-cards strong { font-size: 1.25rem; }
 .workfile-category-table { border: 1px solid var(--border); border-radius: 12px; overflow: hidden; }
