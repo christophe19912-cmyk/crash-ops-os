@@ -16,6 +16,12 @@ export type RepairLifecycleEvent = {
   id: string; event_type: string; old_value: string | null; new_value: string | null;
   metadata: Record<string, unknown>; created_at: string;
 };
+export type JobCostCategory = "parts" | "sublet" | "paint_materials" | "other";
+export type JobCostInvoice = {
+  id: string; repair_order_id: string; category: JobCostCategory; vendor: string | null;
+  invoice_number: string | null; invoice_date: string | null; amount: number;
+  notes: string | null; source: "manual" | "ai_scan"; created_at: string;
+};
 
 export type EstimateRepairInput = {
   shopName: string;
@@ -93,6 +99,32 @@ export async function loadRepairLifecycleEvents(repairOrderId: string): Promise<
     .returns<RepairLifecycleEvent[]>();
   if (error) throw supabaseError(error, "Repair history could not be loaded.");
   return data ?? [];
+}
+
+export async function loadJobCostInvoices(repairOrderId: string): Promise<JobCostInvoice[]> {
+  const { data, error } = await client().from("repair_order_invoices")
+    .select("id, repair_order_id, category, vendor, invoice_number, invoice_date, amount, notes, source, created_at")
+    .eq("repair_order_id", repairOrderId).order("invoice_date", { ascending: false })
+    .returns<JobCostInvoice[]>();
+  if (error) throw supabaseError(error, "Job-cost invoices could not be loaded.");
+  return data ?? [];
+}
+
+export async function addJobCostInvoice(repairOrderId: string, input: {
+  category: JobCostCategory; vendor: string; invoiceNumber: string;
+  invoiceDate: string; amount: number; notes: string;
+}): Promise<void> {
+  const organizationId = await currentOrganizationId();
+  const { data: repair, error: repairError } = await client().from("repair_orders")
+    .select("shop_id").eq("id", repairOrderId).single<{ shop_id: string }>();
+  if (repairError) throw supabaseError(repairError, "The repair work file could not be verified.");
+  const { error } = await client().from("repair_order_invoices").insert({
+    organization_id: organizationId, shop_id: repair.shop_id, repair_order_id: repairOrderId,
+    category: input.category, vendor: input.vendor.trim() || null,
+    invoice_number: input.invoiceNumber.trim() || null, invoice_date: input.invoiceDate || null,
+    amount: input.amount, notes: input.notes.trim() || null, source: "manual",
+  });
+  if (error) throw supabaseError(error, "The invoice could not be added to this work file.");
 }
 
 export async function advanceRepairLifecycle(
