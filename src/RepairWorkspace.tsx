@@ -1,12 +1,14 @@
 import { useEffect, useMemo, useState } from "react";
 import {
   advanceRepairLifecycle, createScheduledRepair, loadRepairLifecycleEvents, loadRepairWorkspace,
-  updateRepairWorkspace, type RepairLifecycleEvent, type RepairLifecycleStatus,
+  updateRepairWorkspace, loadJobCostInvoices, addJobCostInvoice,
+  type JobCostCategory, type JobCostInvoice, type RepairLifecycleEvent, type RepairLifecycleStatus,
   type RepairWorkspaceRecord, type RepairWorkspaceShop,
 } from "./services/repairWorkspaceData";
 
 const lifecycle: RepairLifecycleStatus[] = ["scheduled", "arrived", "wip", "qc", "delivered"];
 const emptyForm = { shopId: "", roNumber: "", customer: "", vehicle: "", scheduledDate: "", insurance: "", vin: "", claimNumber: "" };
+const emptyInvoice = { category: "parts" as JobCostCategory, vendor: "", invoiceNumber: "", invoiceDate: "", amount: "", notes: "" };
 
 function payloadNumber(repair: RepairWorkspaceRecord, key: string) {
   const value = repair.source_payload?.[key];
@@ -25,6 +27,8 @@ function RepairWorkspace() {
   const [shops, setShops] = useState<RepairWorkspaceShop[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [events, setEvents] = useState<RepairLifecycleEvent[]>([]);
+  const [invoices, setInvoices] = useState<JobCostInvoice[]>([]);
+  const [invoiceForm, setInvoiceForm] = useState(emptyInvoice);
   const [shopFilter, setShopFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("active");
   const [search, setSearch] = useState("");
@@ -55,6 +59,14 @@ function RepairWorkspace() {
     let active = true;
     void loadRepairLifecycleEvents(selectedId).then((data) => { if (active) setEvents(data); })
       .catch((caught: unknown) => { if (active) setError(caught instanceof Error ? caught.message : "Repair history could not be loaded."); });
+    return () => { active = false; };
+  }, [selectedId]);
+
+  useEffect(() => {
+    if (!selectedId) return;
+    let active = true;
+    void loadJobCostInvoices(selectedId).then((data) => { if (active) setInvoices(data); })
+      .catch((caught: unknown) => { if (active) setError(caught instanceof Error ? caught.message : "Job costs could not be loaded."); });
     return () => { active = false; };
   }, [selectedId]);
 
@@ -94,6 +106,18 @@ function RepairWorkspace() {
     finally { setBusy(false); }
   }
 
+  async function createInvoice() {
+    if (!selected) return;
+    const amount = Number(invoiceForm.amount);
+    if (!Number.isFinite(amount) || amount <= 0) { setError("Enter an invoice total greater than zero."); return; }
+    setBusy(true);
+    try {
+      await addJobCostInvoice(selected.id, { ...invoiceForm, amount });
+      setInvoices(await loadJobCostInvoices(selected.id)); setInvoiceForm(emptyInvoice); setError("");
+    } catch (caught: unknown) { setError(caught instanceof Error ? caught.message : "Invoice could not be added."); }
+    finally { setBusy(false); }
+  }
+
   return <>
     <header className="topbar"><div><p className="eyebrow">CORE REPAIR RECORD</p><h2>Repairs</h2><p className="page-description">One record from estimate intake through delivery. Filter, open, and advance the repair without re-entering the job.</p></div><button className="primary-button" onClick={() => setShowCreate((value) => !value)} type="button">{showCreate ? "Cancel" : "Add scheduled repair"}</button></header>
     {error && <section className="panel import-error"><strong>Repair workspace needs attention</strong><p>{error}</p></section>}
@@ -127,6 +151,46 @@ function RepairWorkspace() {
           <div><span>Financial</span><p>Estimate: {selected.pre_tax_total.toLocaleString("en-US", { style: "currency", currency: "USD" })}</p><p>Parts: {money(payloadNumber(selected, "partsTotal"))}</p><p>Paint materials: {money(payloadNumber(selected, "paintMaterialsTotal"))}</p><p>Insurer: {selected.insurance ?? "Not recorded"}</p><p>Claim: {selected.claim_number ?? "Not recorded"}</p></div>
           <div><span>Lifecycle</span><p>Scheduled: {selected.scheduled_date ?? "Not recorded"}</p><p>Arrived: {selected.arrival_date ?? "Not recorded"}</p><p>QC: {selected.qc_at ? new Date(selected.qc_at).toLocaleString() : "Not reached"}</p><p>Delivered: {selected.delivered_at ? new Date(selected.delivered_at).toLocaleString() : "Not reached"}</p><p>Workfile: {selected.workfile_id ?? "Not recorded"}</p></div>
         </div>
+        {(() => {
+          const sales = {
+            parts: payloadNumber(selected, "partsTotal"),
+            labor: payloadNumber(selected, "bodyLaborTotal") + payloadNumber(selected, "paintLaborTotal"),
+            paint_materials: payloadNumber(selected, "paintMaterialsTotal"),
+            total: selected.pre_tax_total,
+          };
+          const costs = invoices.reduce((totals, invoice) => ({ ...totals, [invoice.category]: (totals[invoice.category] ?? 0) + invoice.amount }), {} as Record<JobCostCategory, number>);
+          const totalCost = Object.values(costs).reduce((sum, value) => sum + value, 0);
+          const grossProfit = sales.total - totalCost;
+          return <section className="workfile-costing">
+            <div className="panel-header"><div><p className="section-label">WHOLE-INVOICE JOB COSTING</p><h3>Work file totals</h3></div></div>
+            <div className="workfile-total-cards">
+              <article><span>Total sales</span><strong>{money(sales.total)}</strong></article>
+              <article><span>Invoices entered</span><strong>{money(totalCost)}</strong></article>
+              <article><span>Gross profit</span><strong>{money(grossProfit)}</strong><small>{sales.total > 0 ? `${((grossProfit / sales.total) * 100).toFixed(1)}% GP` : "—"}</small></article>
+              <article><span>Parts GP</span><strong>{money(sales.parts - (costs.parts ?? 0))}</strong><small>{sales.parts > 0 ? `${(((sales.parts - (costs.parts ?? 0)) / sales.parts) * 100).toFixed(1)}% GP` : "No parts sales"}</small></article>
+            </div>
+            <div className="workfile-category-table">
+              <div><strong>Category</strong><strong>Sales</strong><strong>Cost</strong><strong>GP</strong></div>
+              <div><span>Parts</span><span>{money(sales.parts)}</span><span>{money(costs.parts ?? 0)}</span><span>{money(sales.parts - (costs.parts ?? 0))}</span></div>
+              <div><span>Paint materials</span><span>{money(sales.paint_materials)}</span><span>{money(costs.paint_materials ?? 0)}</span><span>{money(sales.paint_materials - (costs.paint_materials ?? 0))}</span></div>
+              <div><span>Sublet</span><span>—</span><span>{money(costs.sublet ?? 0)}</span><span>—</span></div>
+              <div><span>Other</span><span>—</span><span>{money(costs.other ?? 0)}</span><span>—</span></div>
+            </div>
+            <div className="invoice-entry">
+              <p className="section-label">ADD WHOLE INVOICE</p>
+              <div className="invoice-entry-grid">
+                <label>Cost category<select value={invoiceForm.category} onChange={(event) => setInvoiceForm({ ...invoiceForm, category: event.target.value as JobCostCategory })}><option value="parts">Parts</option><option value="paint_materials">Paint materials</option><option value="sublet">Sublet</option><option value="other">Other</option></select></label>
+                <label>Vendor<input value={invoiceForm.vendor} onChange={(event) => setInvoiceForm({ ...invoiceForm, vendor: event.target.value })}/></label>
+                <label>Invoice number<input value={invoiceForm.invoiceNumber} onChange={(event) => setInvoiceForm({ ...invoiceForm, invoiceNumber: event.target.value })}/></label>
+                <label>Invoice date<input type="date" value={invoiceForm.invoiceDate} onChange={(event) => setInvoiceForm({ ...invoiceForm, invoiceDate: event.target.value })}/></label>
+                <label>Invoice total<input inputMode="decimal" placeholder="0.00" value={invoiceForm.amount} onChange={(event) => setInvoiceForm({ ...invoiceForm, amount: event.target.value })}/></label>
+                <label>Note<input value={invoiceForm.notes} onChange={(event) => setInvoiceForm({ ...invoiceForm, notes: event.target.value })}/></label>
+              </div>
+              <button className="primary-button" disabled={busy} onClick={() => void createInvoice()} type="button">Add invoice to work file</button>
+            </div>
+            <div className="invoice-list"><p className="section-label">INVOICES</p>{invoices.length === 0 ? <p>No job-cost invoices entered.</p> : invoices.map((invoice) => <article key={invoice.id}><div><strong>{invoice.vendor || "Vendor not entered"}</strong><span>{invoice.category.replace("_", " ")} · {invoice.invoice_number || "No invoice #"}</span></div><strong>{money(invoice.amount)}</strong></article>)}</div>
+          </section>;
+        })()}
         <div className="repair-edit-grid"><label>VIN<input defaultValue={selected.vin ?? ""} key={`${selected.id}-vin`} onBlur={(event) => void saveField({ vin: event.target.value || null })}/></label><label>Claim number<input defaultValue={selected.claim_number ?? ""} key={`${selected.id}-claim`} onBlur={(event) => void saveField({ claim_number: event.target.value || null })}/></label><label>Workfile ID<input defaultValue={selected.workfile_id ?? ""} key={`${selected.id}-workfile`} onBlur={(event) => void saveField({ workfile_id: event.target.value || null })}/></label><label>Scheduled date<input defaultValue={selected.scheduled_date ?? ""} key={`${selected.id}-scheduled`} type="date" onBlur={(event) => void saveField({ scheduled_date: event.target.value || null })}/></label></div>
         <label className="repair-notes">Repair notes<textarea defaultValue={selected.lifecycle_notes ?? ""} key={`${selected.id}-notes`} onBlur={(event) => void saveField({ lifecycle_notes: event.target.value || null })}/></label>
         <div className="repair-history"><p className="section-label">AUDIT TRAIL</p>{events.length === 0 ? <p>No lifecycle events recorded yet.</p> : events.map((event) => <article key={event.id}><div><strong>{event.event_type.replaceAll("_", " ")}</strong><span>{new Date(event.created_at).toLocaleString()}</span></div>{event.old_value !== null || event.new_value !== null ? <p>{event.old_value ?? "—"} → {event.new_value ?? "—"}</p> : null}</article>)}</div>

@@ -110,7 +110,7 @@ function App() {
       <aside className="sidebar">
         <div className="brand">
           <div className="brand-mark">CO</div>
-          <div><h1>Crash Ops</h1><p>Operations System</p></div>
+          <div><h1>Crash Ops Pro</h1><p>Operations System</p></div>
         </div>
 
         <nav className="navigation">
@@ -138,7 +138,7 @@ function App() {
             <div><p>{profile?.full_name || profile?.email || "Crash Ops User"}</p><span>{organization?.name || roleLabel}</span></div>
           </div>
           <button className="logout-button" onClick={() => void signOut()} type="button">Sign out</button>
-          <span className="version-label">Crash Ops OS · Beta</span>
+          <span className="version-label">Crash Ops Pro · Beta</span>
         </div>
       </aside>
 
