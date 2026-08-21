@@ -23,9 +23,14 @@ function money(value: number) {
   return value.toLocaleString("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 });
 }
 
-type RepairWorkspaceProps = { initialRepairId?: string | null; focused?: boolean };
+type RepairWorkspaceProps = {
+  initialRepairId?: string | null;
+  initialRoNumber?: string | null;
+  initialShopId?: string | null;
+  focused?: boolean;
+};
 
-function RepairWorkspace({ initialRepairId, focused = false }: RepairWorkspaceProps) {
+function RepairWorkspace({ initialRepairId, initialRoNumber, initialShopId, focused = false }: RepairWorkspaceProps) {
   const [repairs, setRepairs] = useState<RepairWorkspaceRecord[]>([]);
   const [shops, setShops] = useState<RepairWorkspaceShop[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -53,23 +58,29 @@ function RepairWorkspace({ initialRepairId, focused = false }: RepairWorkspacePr
     void loadRepairWorkspace().then((data) => {
       if (!active) return;
       setRepairs(data.repairs); setShops(data.shops);
-      setSelectedId(data.repairs.some((repair) => repair.id === initialRepairId) ? initialRepairId! : null);
+      const requestedRepair = data.repairs.find((repair) =>
+        String(repair.id) === String(initialRepairId ?? "") ||
+        (Boolean(initialRoNumber) && repair.ro_number === initialRoNumber && (!initialShopId || repair.shop_id === initialShopId)),
+      );
+      setSelectedId(requestedRepair?.id ?? null);
       setForm((current) => ({ ...current, shopId: data.shops[0]?.id ?? "" }));
     }).catch((caught: unknown) => { if (active) setError(caught instanceof Error ? caught.message : "Repair workspace could not be loaded."); });
     return () => { active = false; };
-  }, [initialRepairId]);
+  }, [initialRepairId, initialRoNumber, initialShopId]);
 
   function openWorkFile(repair: RepairWorkspaceRecord) {
     const url = new URL(window.location.href);
     url.search = "";
     url.searchParams.set("page", "repairs");
-    url.searchParams.set("ro", repair.id);
+    url.searchParams.set("repairId", String(repair.id));
+    url.searchParams.set("roNumber", repair.ro_number);
+    url.searchParams.set("shopId", repair.shop_id);
     window.open(url.toString(), `_blank`, "noopener,noreferrer");
   }
 
   function leaveCompletedWorkFile() {
     setSelectedId(null);
-    if (!initialRepairId) return;
+    if (!initialRepairId && !initialRoNumber) return;
 
     window.close();
     window.setTimeout(() => setWorkFileExited(true), 150);

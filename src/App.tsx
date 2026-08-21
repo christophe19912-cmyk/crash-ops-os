@@ -81,8 +81,11 @@ function App() {
   const role = useRole();
   const contextStatus = useApplicationContextStatus();
   const requestedParams = new URLSearchParams(window.location.search);
-  const requestedRepairId = requestedParams.get("ro");
-  const [activePage, setActivePage] = useState<Page>(requestedRepairId || requestedParams.get("page") === "repairs" ? "Repairs" : "Mission Control");
+  const requestedRepairId = requestedParams.get("repairId") ?? requestedParams.get("ro");
+  const requestedRoNumber = requestedParams.get("roNumber");
+  const requestedShopId = requestedParams.get("shopId");
+  const focusedWorkFile = Boolean(requestedRepairId || requestedRoNumber);
+  const [activePage, setActivePage] = useState<Page>(focusedWorkFile || requestedParams.get("page") === "repairs" ? "Repairs" : "Mission Control");
 
   const roleLabel = role
     ? role.split("_").map((word) => word[0].toUpperCase() + word.slice(1)).join(" ")
@@ -90,7 +93,7 @@ function App() {
 
   function renderPage() {
     if (activePage === "Mission Control") return <MissionControl />;
-    if (activePage === "Repairs") return <RepairWorkspace initialRepairId={requestedRepairId} />;
+    if (activePage === "Repairs") return <RepairWorkspace initialRepairId={requestedRepairId} initialRoNumber={requestedRoNumber} initialShopId={requestedShopId} />;
     if (activePage === "Parts Invoices") return <PartsInvoices />;
     if (activePage === "Estimate Intake") return <EstimateIntake onScheduled={() => setActivePage("Repairs")} />;
     if (activePage === "Scheduling") return <SchedulingBoard />;
@@ -110,8 +113,8 @@ function App() {
     return null;
   }
 
-  if (requestedRepairId) {
-    return <main className="standalone-workfile"><RepairWorkspace initialRepairId={requestedRepairId} focused /></main>;
+  if (focusedWorkFile) {
+    return <main className="standalone-workfile"><RepairWorkspace initialRepairId={requestedRepairId} initialRoNumber={requestedRoNumber} initialShopId={requestedShopId} focused /></main>;
   }
 
   return (
