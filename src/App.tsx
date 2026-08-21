@@ -80,7 +80,8 @@ function App() {
   const organization = useOrganization();
   const role = useRole();
   const contextStatus = useApplicationContextStatus();
-  const [activePage, setActivePage] = useState<Page>("Mission Control");
+  const requestedRepairId = new URLSearchParams(window.location.search).get("ro");
+  const [activePage, setActivePage] = useState<Page>(requestedRepairId ? "Repairs" : "Mission Control");
 
   const roleLabel = role
     ? role.split("_").map((word) => word[0].toUpperCase() + word.slice(1)).join(" ")
@@ -88,7 +89,7 @@ function App() {
 
   function renderPage() {
     if (activePage === "Mission Control") return <MissionControl />;
-    if (activePage === "Repairs") return <RepairWorkspace />;
+    if (activePage === "Repairs") return <RepairWorkspace initialRepairId={requestedRepairId} />;
     if (activePage === "Parts Invoices") return <PartsInvoices />;
     if (activePage === "Estimate Intake") return <EstimateIntake onScheduled={() => setActivePage("Repairs")} />;
     if (activePage === "Scheduling") return <SchedulingBoard />;
