@@ -3269,3 +3269,21 @@ button {
 .repair-history article span { color: #64748b; font-size: .72rem; }
 @media (max-width: 1000px) { .repair-create { grid-template-columns: repeat(2, 1fr); } .repair-workspace-layout { grid-template-columns: 1fr; } }
 @media (max-width: 700px) { .repair-lifecycle-metrics, .repair-filters, .repair-data-grid, .repair-edit-grid { grid-template-columns: 1fr; } .repair-create { grid-template-columns: 1fr; } }
+.workfile-costing { margin-top: 24px; border-top: 1px solid var(--border); padding-top: 20px; }
+.workfile-total-cards { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; margin: 14px 0; }
+.workfile-total-cards article { padding: 14px; border: 1px solid var(--border); border-radius: 12px; background: var(--surface-soft, #f8fafc); display: grid; gap: 5px; }
+.workfile-total-cards span, .workfile-total-cards small { color: var(--text-muted, #64748b); }
+.workfile-total-cards strong { font-size: 1.25rem; }
+.workfile-category-table { border: 1px solid var(--border); border-radius: 12px; overflow: hidden; }
+.workfile-category-table > div { display: grid; grid-template-columns: 1.4fr repeat(3, 1fr); gap: 10px; padding: 10px 12px; border-bottom: 1px solid var(--border); }
+.workfile-category-table > div:last-child { border-bottom: 0; }
+.workfile-category-table > div:first-child { background: var(--surface-soft, #f8fafc); }
+.invoice-entry { margin-top: 18px; padding: 16px; border: 1px solid var(--border); border-radius: 12px; }
+.invoice-entry-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin: 10px 0 14px; }
+.invoice-entry-grid label { display: grid; gap: 6px; }
+.invoice-list { margin-top: 18px; }
+.invoice-list article { display: flex; justify-content: space-between; gap: 16px; padding: 10px 0; border-bottom: 1px solid var(--border); }
+.invoice-list article div { display: grid; gap: 3px; }
+.invoice-list article span { color: var(--text-muted, #64748b); text-transform: capitalize; }
+@media (max-width: 900px) { .workfile-total-cards { grid-template-columns: repeat(2, minmax(0, 1fr)); } .invoice-entry-grid { grid-template-columns: 1fr; } }
+@media (max-width: 600px) { .workfile-total-cards { grid-template-columns: 1fr; } .workfile-category-table { overflow-x: auto; } .workfile-category-table > div { min-width: 520px; } }
