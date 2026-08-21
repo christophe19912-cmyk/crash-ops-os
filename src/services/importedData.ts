@@ -35,24 +35,24 @@ export function normalizeRepairOrders(
     shop:
   row["Crash Ops Shop"]?.trim() ||
   row["Loc Code"]?.trim() ||
-  "Unknown",
-    roNumber: row.Folder?.trim() || "Unknown",
-    customer: row.Customer?.trim() || "Unknown",
-    vehicle: row.Vehicle?.trim() || "Unknown",
-    stage: row["Repair Stage"]?.trim() || "Unassigned",
+  "",
+    roNumber: row.Folder?.trim() || "",
+    customer: row.Customer?.trim() || "",
+    vehicle: row.Vehicle?.trim() || "",
+    stage: row["Repair Stage"]?.trim() || "",
     laborHours: cleanNumber(row["Total Labor Hours"]),
     preTaxTotal: cleanNumber(row["Pre Tax Total"]),
-    estimator: row["Sales Resource"]?.trim() || "Unassigned",
+    estimator: row["Sales Resource"]?.trim() || "",
     technician:
       row["Crash Ops Technician"]?.trim() ||
       row["Service Resource"]?.trim() ||
-      "Unassigned",
-    insurance: row.Insurance?.trim() || "Unknown",
+      "",
+    insurance: row.Insurance?.trim() || "",
     createdDate: row["Created Date"]?.trim() || "",
     arrivalDate: row["Arrival Date"]?.trim() || "",
     completedDate: row["Completed Date"]?.trim() || "",
     vehicleStatus:
-      row["Vehicle Center Tab"]?.trim() || "Unknown",
+      row["Vehicle Center Tab"]?.trim() || "",
   }));
 }
 
