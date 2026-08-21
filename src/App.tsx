@@ -15,11 +15,12 @@ import BetaSetup from "./BetaSetup";
 import OrganizationModule from "./OrganizationModule";
 import LeadershipDashboard from "./LeadershipDashboard";
 import RepairWorkspace from "./RepairWorkspace";
+import PartsInvoices from "./PartsInvoices";
 import { useAuth } from "./auth/AuthProvider";
 import { useApplicationContextStatus, useOrganization, useRole, useUserProfile } from "./auth/ApplicationContext";
 
 type Page =
-  | "Mission Control" | "Repairs" | "Estimate Intake" | "Scheduling" | "Production Board" | "WIP Capacity"
+  | "Mission Control" | "Repairs" | "Parts Invoices" | "Estimate Intake" | "Scheduling" | "Production Board" | "WIP Capacity"
   | "dAIly Report" | "Leadership" | "Estimator Load" | "Import Center" | "Administration"
   | "Estimator Settings" | "Technician Settings" | "Beta Setup"
   | "Organization Company" | "Organization Centers" | "Organization Users" | "Organization Integrations";
@@ -32,6 +33,7 @@ const navigationGroups: NavigationGroup[] = [
     items: [
       { page: "Mission Control", label: "Dashboard", icon: "MC" },
       { page: "Repairs", label: "Repairs", icon: "RP" },
+      { page: "Parts Invoices", label: "Parts Invoices", icon: "PI" },
     ],
   },
   {
@@ -87,6 +89,7 @@ function App() {
   function renderPage() {
     if (activePage === "Mission Control") return <MissionControl />;
     if (activePage === "Repairs") return <RepairWorkspace />;
+    if (activePage === "Parts Invoices") return <PartsInvoices />;
     if (activePage === "Estimate Intake") return <EstimateIntake onScheduled={() => setActivePage("Repairs")} />;
     if (activePage === "Scheduling") return <SchedulingBoard />;
     if (activePage === "Production Board") return <ProductionBoard />;
