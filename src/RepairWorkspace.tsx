@@ -66,6 +66,19 @@ function RepairWorkspace({ initialRepairId }: RepairWorkspaceProps) {
     window.open(url.toString(), `_blank`, "noopener,noreferrer");
   }
 
+  function leaveCompletedWorkFile() {
+    setSelectedId(null);
+    if (!initialRepairId) return;
+
+    window.close();
+    window.setTimeout(() => {
+      const url = new URL(window.location.href);
+      url.searchParams.delete("ro");
+      url.searchParams.set("page", "repairs");
+      window.location.replace(url.toString());
+    }, 150);
+  }
+
   useEffect(() => {
     if (!selectedId) return;
     let active = true;
@@ -140,7 +153,11 @@ function RepairWorkspace({ initialRepairId }: RepairWorkspaceProps) {
     const action = disposition === "closed" ? "close" : "cancel";
     if (!window.confirm(`${action === "close" ? "Close" : "Cancel"} RO ${selected.ro_number}? The work file and invoices will be retained.`)) return;
     setBusy(true);
-    try { await setRepairDisposition(selected.id, disposition); await refresh(selected.id); setEvents(await loadRepairLifecycleEvents(selected.id)); }
+    try {
+      await setRepairDisposition(selected.id, disposition);
+      await refresh();
+      leaveCompletedWorkFile();
+    }
     catch (caught: unknown) { setError(caught instanceof Error ? caught.message : `The job could not be ${action}d.`); }
     finally { setBusy(false); }
   }
@@ -171,7 +188,7 @@ function RepairWorkspace({ initialRepairId }: RepairWorkspaceProps) {
       })}</section>
 
       <section className="panel repair-workspace-detail">{!selected ? <p>Select a repair to open its workspace.</p> : <>
-        <div className="panel-header"><div><p className="section-label">REPAIR WORKSPACE</p><h3>RO {selected.ro_number} · {selected.vehicle}</h3><p>{selected.customer} · {shopName(selected.shop_id)}</p></div><div className="repair-terminal-actions">{selectedDisposition ? <span className="repair-delivered">{selectedDisposition}</span> : <>{nextStatus && <button className="primary-button" disabled={busy} onClick={() => void advance()} type="button">Advance to {nextStatus}</button>}<button className="secondary-button" disabled={busy} onClick={() => void dispositionJob("closed")} type="button">Close job</button><button className="danger-button" disabled={busy} onClick={() => void dispositionJob("cancelled")} type="button">Cancel job</button></>}</div></div>
+        <div className="panel-header"><div><p className="section-label">REPAIR WORKSPACE</p><h3>RO {selected.ro_number} · {selected.vehicle}</h3><p>{selected.customer} · {shopName(selected.shop_id)}</p></div><div className="repair-terminal-actions">{selectedDisposition ? <><span className="repair-delivered">{selectedDisposition}</span><button className="secondary-button" onClick={leaveCompletedWorkFile} type="button">Close work file</button></> : <>{nextStatus && <button className="primary-button" disabled={busy} onClick={() => void advance()} type="button">Advance to {nextStatus}</button>}<button className="secondary-button" disabled={busy} onClick={() => void dispositionJob("closed")} type="button">Close job</button><button className="danger-button" disabled={busy} onClick={() => void dispositionJob("cancelled")} type="button">Cancel job</button></>}</div></div>
         {payloadText(selected, "vehiclePhotoDataUrl") && <img src={payloadText(selected, "vehiclePhotoDataUrl")} alt="Vehicle" style={{ width: "100%", maxHeight: 320, objectFit: "cover", borderRadius: 12, marginBottom: 16 }} />}
         <div className="repair-lifecycle-rail">{lifecycle.map((status, index) => <div className={index <= statusIndex ? "complete" : ""} key={status}><span>{index + 1}</span><strong>{status}</strong></div>)}</div>
         <div className="repair-data-grid">
