@@ -133,6 +133,17 @@ export async function addJobCostInvoice(repairOrderId: string, input: {
   if (error) throw supabaseError(error, "The invoice could not be added to this work file.");
 }
 
+export async function updatePartsSales(repairOrderId: string, partsSales: number): Promise<void> {
+  const { data, error: loadError } = await client().from("repair_orders")
+    .select("source_payload").eq("id", repairOrderId)
+    .single<{ source_payload: Record<string, unknown> }>();
+  if (loadError) throw supabaseError(loadError, "The work-file sales could not be loaded.");
+  const { error } = await client().from("repair_orders").update({
+    source_payload: { ...(data.source_payload ?? {}), partsTotal: partsSales },
+  }).eq("id", repairOrderId);
+  if (error) throw supabaseError(error, "Parts sales could not be saved.");
+}
+
 export async function advanceRepairLifecycle(
   repairOrderId: string, status: RepairLifecycleStatus,
 ): Promise<void> {
