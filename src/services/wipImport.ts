@@ -80,9 +80,7 @@ function extractBodyTechnician(value: unknown) {
   const match = cleaned.match(/^B Tech:\s*(.*?)\s*(?:---|$)/i);
   const technician = match?.[1]?.trim();
 
-  return technician && !/^-+$/.test(technician)
-    ? technician
-    : "Unassigned";
+  return technician && !/^-+$/.test(technician) ? technician : "";
 }
 
 export function parseWipMatrix(matrix: unknown[][]): ParseResult {
@@ -97,7 +95,7 @@ export function parseWipMatrix(matrix: unknown[][]): ParseResult {
 
   if (isGroupedReport) {
     const rows: NexsyisRow[] = [];
-    let technician = "Unassigned";
+    let technician = "";
 
     matrix.slice(1).forEach((sourceRow) => {
       const firstCell = text(sourceRow[0]);
@@ -155,9 +153,9 @@ export function parseWipMatrix(matrix: unknown[][]): ParseResult {
     };
   }
 
-  const missingColumns = legacyRequiredColumns.filter(
-    (column) => !headers.includes(column),
-  );
+  // An RO number is the only field required to create a canonical work file.
+  // Every other unavailable parameter is intentionally stored as blank.
+  const missingColumns = headers.includes("Folder") ? [] : ["Folder"];
 
   if (missingColumns.length > 0) {
     return { rows: [], missingColumns, format: "unknown" };
@@ -167,13 +165,27 @@ export function parseWipMatrix(matrix: unknown[][]): ParseResult {
     .slice(1)
     .filter((row) => row.some((value) => text(value)))
     .map((sourceRow) => {
-      const row = Object.fromEntries(
+      const raw = Object.fromEntries(
         headers.map((header, index) => [header, text(sourceRow[index])]),
-      ) as NexsyisRow;
-
-      row["Crash Ops Technician"] =
-        row["Crash Ops Technician"] || row["Service Resource"] || "Unassigned";
-      return row;
+      );
+      return {
+        ...raw,
+        "Loc Code": valueAt(sourceRow, headers, "Loc Code"),
+        Folder: valueAt(sourceRow, headers, "Folder"),
+        "Vehicle Center Tab": valueAt(sourceRow, headers, "Vehicle Center Tab"),
+        "Repair Stage": valueAt(sourceRow, headers, "Repair Stage"),
+        Customer: valueAt(sourceRow, headers, "Customer"),
+        Vehicle: valueAt(sourceRow, headers, "Vehicle"),
+        Insurance: valueAt(sourceRow, headers, "Insurance"),
+        "Sales Resource": valueAt(sourceRow, headers, "Sales Resource"),
+        "Service Resource": valueAt(sourceRow, headers, "Service Resource"),
+        "Crash Ops Technician": valueAt(sourceRow, headers, "Crash Ops Technician") || valueAt(sourceRow, headers, "Service Resource"),
+        "Total Labor Hours": valueAt(sourceRow, headers, "Total Labor Hours"),
+        "Pre Tax Total": valueAt(sourceRow, headers, "Pre Tax Total"),
+        "Created Date": valueAt(sourceRow, headers, "Created Date"),
+        "Arrival Date": valueAt(sourceRow, headers, "Arrival Date"),
+        "Completed Date": valueAt(sourceRow, headers, "Completed Date"),
+      } as NexsyisRow;
     });
 
   return { rows, missingColumns: [], format: "legacy" };
