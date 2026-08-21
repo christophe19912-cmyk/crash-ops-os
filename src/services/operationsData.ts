@@ -60,6 +60,12 @@ export async function persistWipImport(record: ImportedWipRecord, orders: Repair
         .map((order) => [order.roNumber.trim().toLowerCase(), order]),
     ).values(),
   );
+  const roNumbers = canonicalOrders.map((order) => order.roNumber);
+  const { data: existingFiles, error: existingError } = await supabase.from("repair_orders")
+    .select("ro_number, source_payload").eq("shop_id", context.shopId).in("ro_number", roNumbers)
+    .returns<Array<{ ro_number: string; source_payload: Record<string, unknown> }>>();
+  if (existingError) throw existingError;
+  const existingPayloads = new Map((existingFiles ?? []).map((file) => [file.ro_number.toLowerCase(), file.source_payload ?? {}]));
   const payload = canonicalOrders.map((order) => ({
     organization_id: context.organizationId, shop_id: context.shopId, wip_import_id: imported.id,
     ro_number: order.roNumber, customer: order.customer, vehicle: order.vehicle, stage: order.stage,
@@ -68,6 +74,7 @@ export async function persistWipImport(record: ImportedWipRecord, orders: Repair
     completed_date: nullableDate(order.completedDate), vehicle_status: order.vehicleStatus,
     source: record.source, source_metadata: { fileName: record.fileName }, imported_at: record.importedAt,
     source_payload: {
+      ...(existingPayloads.get(order.roNumber.toLowerCase()) ?? {}),
       source: "wip_import", fileName: record.fileName, technician: order.technician,
       customer: order.customer, vehicle: order.vehicle, stage: order.stage,
       estimator: order.estimator, insurance: order.insurance,
