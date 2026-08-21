@@ -24,17 +24,34 @@ export type ActionItem = {
 
 type TenantContext = { organizationId: string; shopId: string; user: User };
 
+function persistenceError(error: unknown, stage: string): Error {
+  if (error instanceof Error) return new Error(`${stage}: ${error.message}`);
+  if (error && typeof error === "object") {
+    const value = error as { message?: string; details?: string; hint?: string; code?: string };
+    const detail = [value.message, value.details, value.hint, value.code ? `Code ${value.code}` : ""].filter(Boolean).join(" · ");
+    if (detail) return new Error(`${stage}: ${detail}`);
+  }
+  return new Error(`${stage}: Supabase rejected the request without returning details.`);
+}
+
+function normalizedShopName(value: string): string {
+  return value.trim().replace(/\s+/g, " ").toLowerCase();
+}
+
 async function tenantContext(shopName: string): Promise<TenantContext> {
   if (!supabase) throw new Error("Supabase is not configured.");
   const { data: auth } = await supabase.auth.getUser();
   if (!auth.user) throw new Error("Authentication is required.");
   const { data: profile, error: profileError } = await supabase
     .from("profiles").select("organization_id").eq("id", auth.user.id).single<{ organization_id: string }>();
-  if (profileError) throw profileError;
-  const { data: shop, error: shopError } = await supabase
-    .from("shops").select("id").eq("organization_id", profile.organization_id)
-    .eq("name", shopName).single<{ id: string }>();
-  if (shopError) throw shopError;
+  if (profileError) throw persistenceError(profileError, "Organization lookup failed");
+  const { data: shops, error: shopError } = await supabase
+    .from("shops").select("id, name").eq("organization_id", profile.organization_id)
+    .returns<Array<{ id: string; name: string }>>();
+  if (shopError) throw persistenceError(shopError, "Shop lookup failed");
+  const requestedName = normalizedShopName(shopName);
+  const shop = (shops ?? []).find((candidate) => normalizedShopName(candidate.name) === requestedName);
+  if (!shop) throw new Error(`Shop lookup failed: “${shopName || "No shop selected"}” does not match an accessible Crash Ops location.`);
   return { organizationId: profile.organization_id, shopId: shop.id, user: auth.user };
 }
 
@@ -51,7 +68,7 @@ export async function persistWipImport(record: ImportedWipRecord, orders: Repair
     organization_id: context.organizationId, shop_id: context.shopId, imported_by: context.user.id,
     source: record.source, file_name: record.fileName, row_count: orders.length, status: "completed",
   }).select("id").single<{ id: string }>();
-  if (importError) throw importError;
+  if (importError) throw persistenceError(importError, "Import record could not be created");
 
   const canonicalOrders = Array.from(
     new Map(
@@ -64,7 +81,7 @@ export async function persistWipImport(record: ImportedWipRecord, orders: Repair
   const { data: existingFiles, error: existingError } = await supabase.from("repair_orders")
     .select("ro_number, source_payload").eq("shop_id", context.shopId).in("ro_number", roNumbers)
     .returns<Array<{ ro_number: string; source_payload: Record<string, unknown> }>>();
-  if (existingError) throw existingError;
+  if (existingError) throw persistenceError(existingError, "Existing repair files could not be checked");
   const existingPayloads = new Map((existingFiles ?? []).map((file) => [file.ro_number.toLowerCase(), file.source_payload ?? {}]));
   const payload = canonicalOrders.map((order) => ({
     organization_id: context.organizationId, shop_id: context.shopId, wip_import_id: imported.id,
@@ -84,7 +101,7 @@ export async function persistWipImport(record: ImportedWipRecord, orders: Repair
     },
   }));
   const { error } = await supabase.from("repair_orders").upsert(payload, { onConflict: "shop_id,ro_number" });
-  if (error) throw error;
+  if (error) throw persistenceError(error, "Repair-order work files could not be saved");
 }
 
 export async function syncRecommendationActions(recommendations: OperationalRecommendation[]): Promise<void> {

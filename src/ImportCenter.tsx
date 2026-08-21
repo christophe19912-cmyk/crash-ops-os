@@ -194,11 +194,13 @@ const [selectedShop, setSelectedShop] =
       JSON.stringify(importRecord),
     );
 
-    setImportApplied(true);
     try {
       await persistWipImport(importRecord, normalizeRepairOrders(importRecord));
+      setImportApplied(true);
+      setParseError("");
     } catch (error: unknown) {
       setParseError(error instanceof Error ? error.message : "The import was saved locally but could not be persisted.");
+      setImportApplied(false);
     }
   }
 
