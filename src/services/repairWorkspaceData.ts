@@ -83,13 +83,19 @@ async function currentOrganizationId(): Promise<string> {
 export async function loadRepairWorkspace(): Promise<{
   repairs: RepairWorkspaceRecord[]; shops: RepairWorkspaceShop[];
 }> {
+  type CompatibleRepairRow = Omit<RepairWorkspaceRecord, "technician" | "updated_at"> & { imported_at: string };
   const [repairs, shops] = await Promise.all([
-    client().from("repair_orders").select("id, organization_id, shop_id, ro_number, customer, vehicle, vin, claim_number, workfile_id, insurance, estimator, technician, stage, vehicle_status, labor_hours, pre_tax_total, lifecycle_status, scheduled_date, arrival_date, qc_at, delivered_at, completed_date, lifecycle_notes, source_payload, created_at, updated_at").order("updated_at", { ascending: false }).returns<RepairWorkspaceRecord[]>(),
+    client().from("repair_orders").select("id, organization_id, shop_id, ro_number, customer, vehicle, vin, claim_number, workfile_id, insurance, estimator, stage, vehicle_status, labor_hours, pre_tax_total, lifecycle_status, scheduled_date, arrival_date, qc_at, delivered_at, completed_date, lifecycle_notes, source_payload, created_at, imported_at").order("imported_at", { ascending: false }).returns<CompatibleRepairRow[]>(),
     client().from("shops").select("id, name").order("name").returns<RepairWorkspaceShop[]>(),
   ]);
   const error = repairs.error ?? shops.error;
   if (error) throw supabaseError(error, "Repair workspace could not be loaded.");
-  return { repairs: repairs.data ?? [], shops: shops.data ?? [] };
+  return {
+    repairs: (repairs.data ?? []).map((repair) => ({
+      ...repair, technician: null, updated_at: repair.imported_at,
+    })),
+    shops: shops.data ?? [],
+  };
 }
 
 export async function loadRepairLifecycleEvents(repairOrderId: string): Promise<RepairLifecycleEvent[]> {
