@@ -80,8 +80,9 @@ function App() {
   const organization = useOrganization();
   const role = useRole();
   const contextStatus = useApplicationContextStatus();
-  const requestedRepairId = new URLSearchParams(window.location.search).get("ro");
-  const [activePage, setActivePage] = useState<Page>(requestedRepairId ? "Repairs" : "Mission Control");
+  const requestedParams = new URLSearchParams(window.location.search);
+  const requestedRepairId = requestedParams.get("ro");
+  const [activePage, setActivePage] = useState<Page>(requestedRepairId || requestedParams.get("page") === "repairs" ? "Repairs" : "Mission Control");
 
   const roleLabel = role
     ? role.split("_").map((word) => word[0].toUpperCase() + word.slice(1)).join(" ")
