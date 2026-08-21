@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import {
   advanceRepairLifecycle, createScheduledRepair, loadRepairLifecycleEvents, loadRepairWorkspace,
   updateRepairWorkspace, loadJobCostInvoices, addJobCostInvoice,
+  setRepairDisposition, type RepairDisposition,
   type JobCostCategory, type JobCostInvoice, type RepairLifecycleEvent, type RepairLifecycleStatus,
   type RepairWorkspaceRecord, type RepairWorkspaceShop,
 } from "./services/repairWorkspaceData";
@@ -74,12 +75,17 @@ function RepairWorkspace() {
     const query = search.trim().toLowerCase();
     const matchesSearch = !query || [repair.ro_number, repair.customer, repair.vehicle, repair.vin, repair.claim_number]
       .some((value) => value?.toLowerCase().includes(query));
+    const disposition = payloadText(repair, "fileDisposition");
     const matchesStatus = statusFilter === "all" || (statusFilter === "active"
-      ? repair.lifecycle_status !== "delivered" : repair.lifecycle_status === statusFilter);
+      ? repair.lifecycle_status !== "delivered" && !disposition
+      : statusFilter === "closed" || statusFilter === "cancelled"
+        ? disposition === statusFilter
+        : repair.lifecycle_status === statusFilter && !disposition);
     return matchesSearch && matchesStatus && (shopFilter === "all" || repair.shop_id === shopFilter);
   }), [repairs, search, shopFilter, statusFilter]);
 
   const selected = repairs.find((repair) => repair.id === selectedId) ?? null;
+  const selectedDisposition = selected ? payloadText(selected, "fileDisposition") : "";
   const statusIndex = selected ? lifecycle.indexOf(selected.lifecycle_status) : -1;
   const nextStatus = statusIndex >= 0 && statusIndex < lifecycle.length - 1 ? lifecycle[statusIndex + 1] : null;
   const shopName = (id: string) => shops.find((shop) => shop.id === id)?.name ?? "Unknown shop";
@@ -118,13 +124,23 @@ function RepairWorkspace() {
     finally { setBusy(false); }
   }
 
+  async function dispositionJob(disposition: RepairDisposition) {
+    if (!selected) return;
+    const action = disposition === "closed" ? "close" : "cancel";
+    if (!window.confirm(`${action === "close" ? "Close" : "Cancel"} RO ${selected.ro_number}? The work file and invoices will be retained.`)) return;
+    setBusy(true);
+    try { await setRepairDisposition(selected.id, disposition); await refresh(selected.id); setEvents(await loadRepairLifecycleEvents(selected.id)); }
+    catch (caught: unknown) { setError(caught instanceof Error ? caught.message : `The job could not be ${action}d.`); }
+    finally { setBusy(false); }
+  }
+
   return <>
     <header className="topbar"><div><p className="eyebrow">CORE REPAIR RECORD</p><h2>Repairs</h2><p className="page-description">One record from estimate intake through delivery. Filter, open, and advance the repair without re-entering the job.</p></div><button className="primary-button" onClick={() => setShowCreate((value) => !value)} type="button">{showCreate ? "Cancel" : "Add scheduled repair"}</button></header>
     {error && <section className="panel import-error"><strong>Repair workspace needs attention</strong><p>{error}</p></section>}
     {showCreate && <section className="panel repair-create"><label>Location<select value={form.shopId} onChange={(event) => setForm({ ...form, shopId: event.target.value })}>{shops.map((shop) => <option key={shop.id} value={shop.id}>{shop.name}</option>)}</select></label><label>RO / workfile number<input value={form.roNumber} onChange={(event) => setForm({ ...form, roNumber: event.target.value })}/></label><label>Drop date<input type="date" value={form.scheduledDate} onChange={(event) => setForm({ ...form, scheduledDate: event.target.value })}/></label><label>Customer<input value={form.customer} onChange={(event) => setForm({ ...form, customer: event.target.value })}/></label><label>Vehicle<input value={form.vehicle} onChange={(event) => setForm({ ...form, vehicle: event.target.value })}/></label><label>VIN<input value={form.vin} onChange={(event) => setForm({ ...form, vin: event.target.value })}/></label><label>Claim<input value={form.claimNumber} onChange={(event) => setForm({ ...form, claimNumber: event.target.value })}/></label><label>Insurer<input value={form.insurance} onChange={(event) => setForm({ ...form, insurance: event.target.value })}/></label><button className="primary-button" disabled={busy} onClick={() => void createRepair()} type="button">Create repair</button></section>}
 
-    <section className="repair-lifecycle-metrics">{lifecycle.map((status) => <article className="card" key={status}><p>{status}</p><strong>{repairs.filter((repair) => repair.lifecycle_status === status).length}</strong><small>{status === "wip" ? "Active production" : "Lifecycle records"}</small></article>)}</section>
-    <section className="panel repair-filters"><input aria-label="Search repairs" placeholder="Search RO, customer, vehicle, VIN, or claim" value={search} onChange={(event) => setSearch(event.target.value)}/><select aria-label="Filter by shop" value={shopFilter} onChange={(event) => setShopFilter(event.target.value)}><option value="all">All accessible shops</option>{shops.map((shop) => <option key={shop.id} value={shop.id}>{shop.name}</option>)}</select><select aria-label="Filter by lifecycle" value={statusFilter} onChange={(event) => setStatusFilter(event.target.value)}><option value="active">Active repairs</option><option value="all">All lifecycle stages</option>{lifecycle.map((status) => <option key={status} value={status}>{status}</option>)}</select></section>
+    <section className="repair-lifecycle-metrics">{lifecycle.map((status) => <article className="card" key={status}><p>{status}</p><strong>{repairs.filter((repair) => repair.lifecycle_status === status && !payloadText(repair, "fileDisposition")).length}</strong><small>{status === "wip" ? "Active production" : "Lifecycle records"}</small></article>)}</section>
+    <section className="panel repair-filters"><input aria-label="Search repairs" placeholder="Search RO, customer, vehicle, VIN, or claim" value={search} onChange={(event) => setSearch(event.target.value)}/><select aria-label="Filter by shop" value={shopFilter} onChange={(event) => setShopFilter(event.target.value)}><option value="all">All accessible shops</option>{shops.map((shop) => <option key={shop.id} value={shop.id}>{shop.name}</option>)}</select><select aria-label="Filter by lifecycle" value={statusFilter} onChange={(event) => setStatusFilter(event.target.value)}><option value="active">Active repairs</option><option value="closed">Closed jobs</option><option value="cancelled">Cancelled jobs</option><option value="all">All work files</option>{lifecycle.map((status) => <option key={status} value={status}>{status}</option>)}</select></section>
 
     <div className="repair-workspace-layout">
       <section className="repair-card-list">{filtered.length === 0 ? <div className="panel"><p>No repairs match these filters.</p></div> : filtered.map((repair) => {
@@ -134,7 +150,7 @@ function RepairWorkspace() {
         const parts = payloadNumber(repair, "partsTotal");
         return <button className={selectedId === repair.id ? "repair-rich-card active" : "repair-rich-card"} key={repair.id} onClick={() => setSelectedId(repair.id)} type="button">
           {photo && <img src={photo} alt="Vehicle" style={{ width: "100%", height: 150, objectFit: "cover", borderRadius: 10, marginBottom: 10 }} />}
-          <div><span className={`repair-lifecycle-badge ${repair.lifecycle_status}`}>{repair.lifecycle_status}</span><strong>RO {repair.ro_number}</strong><small>{shopName(repair.shop_id)}</small></div>
+          <div><span className={`repair-lifecycle-badge ${payloadText(repair, "fileDisposition") || repair.lifecycle_status}`}>{payloadText(repair, "fileDisposition") || repair.lifecycle_status}</span><strong>RO {repair.ro_number}</strong><small>{shopName(repair.shop_id)}</small></div>
           <h3>{repair.vehicle ?? "Vehicle not recorded"}</h3>
           <p>{repair.customer ?? "Customer not recorded"} · {repair.insurance ?? "Insurer not recorded"}</p>
           <div className="repair-card-facts"><span>{repair.labor_hours.toFixed(1)} total hrs</span><span>{money(repair.pre_tax_total)}</span><span>{bodyHours.toFixed(1)} body / {paintHours.toFixed(1)} paint</span><span>{parts ? `${money(parts)} parts` : repair.estimator ?? "No estimator"}</span></div>
@@ -143,7 +159,7 @@ function RepairWorkspace() {
       })}</section>
 
       <section className="panel repair-workspace-detail">{!selected ? <p>Select a repair to open its workspace.</p> : <>
-        <div className="panel-header"><div><p className="section-label">REPAIR WORKSPACE</p><h3>RO {selected.ro_number} · {selected.vehicle}</h3><p>{selected.customer} · {shopName(selected.shop_id)}</p></div>{nextStatus ? <button className="primary-button" disabled={busy} onClick={() => void advance()} type="button">Advance to {nextStatus}</button> : <span className="repair-delivered">Delivered</span>}</div>
+        <div className="panel-header"><div><p className="section-label">REPAIR WORKSPACE</p><h3>RO {selected.ro_number} · {selected.vehicle}</h3><p>{selected.customer} · {shopName(selected.shop_id)}</p></div><div className="repair-terminal-actions">{selectedDisposition ? <span className="repair-delivered">{selectedDisposition}</span> : <>{nextStatus && <button className="primary-button" disabled={busy} onClick={() => void advance()} type="button">Advance to {nextStatus}</button>}<button className="secondary-button" disabled={busy} onClick={() => void dispositionJob("closed")} type="button">Close job</button><button className="danger-button" disabled={busy} onClick={() => void dispositionJob("cancelled")} type="button">Cancel job</button></>}</div></div>
         {payloadText(selected, "vehiclePhotoDataUrl") && <img src={payloadText(selected, "vehiclePhotoDataUrl")} alt="Vehicle" style={{ width: "100%", maxHeight: 320, objectFit: "cover", borderRadius: 12, marginBottom: 16 }} />}
         <div className="repair-lifecycle-rail">{lifecycle.map((status, index) => <div className={index <= statusIndex ? "complete" : ""} key={status}><span>{index + 1}</span><strong>{status}</strong></div>)}</div>
         <div className="repair-data-grid">
