@@ -3257,6 +3257,14 @@ button {
 .repair-lifecycle-metrics .card p { text-transform: capitalize; }
 .repair-filters { display: grid; gap: 0.75rem; grid-template-columns: 2fr 1fr 1fr; margin-bottom: 1rem; }
 .repair-workspace-layout { display: grid; gap: 1rem; grid-template-columns: minmax(300px, 0.8fr) minmax(550px, 1.5fr); }
+.repair-workspace-layout.focused { display: block; }
+.standalone-workfile { min-height: 100vh; padding: 24px; }
+.workfile-window-header { align-items: center; display: flex; justify-content: space-between; gap: 16px; margin: 0 auto 16px; max-width: 1180px; }
+.workfile-window-header h2 { color: #f8fafc; margin: 0; }
+.standalone-workfile .repair-workspace-layout { margin: 0 auto; max-width: 1180px; }
+.workfile-exit-screen { margin: 15vh auto 0; max-width: 620px; text-align: center; }
+.workfile-exit-screen h2 { color: #f8fafc; }
+.workfile-exit-screen p:not(.eyebrow) { color: #94a3b8; }
 .repair-card-list { align-self: start; display: grid; gap: 0.75rem; }
 .repair-rich-card { background: #0f172a; border: 1px solid #263449; border-radius: 16px; box-shadow: 0 8px 24px rgba(0,0,0,.16); display: grid; gap: 0.55rem; padding: 1rem; text-align: left; }
 .repair-rich-card.active { border-color: #2563eb; box-shadow: 0 10px 30px rgba(37,99,235,.14); }

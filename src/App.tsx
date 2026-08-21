@@ -110,6 +110,10 @@ function App() {
     return null;
   }
 
+  if (requestedRepairId) {
+    return <main className="standalone-workfile"><RepairWorkspace initialRepairId={requestedRepairId} focused /></main>;
+  }
+
   return (
     <div className="app">
       <aside className="sidebar">
