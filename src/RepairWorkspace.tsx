@@ -23,9 +23,9 @@ function money(value: number) {
   return value.toLocaleString("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 });
 }
 
-type RepairWorkspaceProps = { initialRepairId?: string | null };
+type RepairWorkspaceProps = { initialRepairId?: string | null; focused?: boolean };
 
-function RepairWorkspace({ initialRepairId }: RepairWorkspaceProps) {
+function RepairWorkspace({ initialRepairId, focused = false }: RepairWorkspaceProps) {
   const [repairs, setRepairs] = useState<RepairWorkspaceRecord[]>([]);
   const [shops, setShops] = useState<RepairWorkspaceShop[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -39,6 +39,7 @@ function RepairWorkspace({ initialRepairId }: RepairWorkspaceProps) {
   const [form, setForm] = useState(emptyForm);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
+  const [workFileExited, setWorkFileExited] = useState(false);
 
   async function refresh(preferredId?: string) {
     const data = await loadRepairWorkspace();
@@ -71,12 +72,7 @@ function RepairWorkspace({ initialRepairId }: RepairWorkspaceProps) {
     if (!initialRepairId) return;
 
     window.close();
-    window.setTimeout(() => {
-      const url = new URL(window.location.href);
-      url.searchParams.delete("ro");
-      url.searchParams.set("page", "repairs");
-      window.location.replace(url.toString());
-    }, 150);
+    window.setTimeout(() => setWorkFileExited(true), 150);
   }
 
   useEffect(() => {
@@ -162,16 +158,18 @@ function RepairWorkspace({ initialRepairId }: RepairWorkspaceProps) {
     finally { setBusy(false); }
   }
 
+  if (focused && workFileExited) return <section className="panel workfile-exit-screen"><p className="eyebrow">WORK FILE CLOSED</p><h2>This work-file window is finished.</h2><p>You can safely close this browser tab. No repair or sales status was changed by closing the window.</p><button className="secondary-button" onClick={() => window.close()} type="button">Close browser tab</button></section>;
+
   return <>
-    <header className="topbar"><div><p className="eyebrow">CORE REPAIR RECORD</p><h2>Repairs</h2><p className="page-description">One record from estimate intake through delivery. Filter, open, and advance the repair without re-entering the job.</p></div><button className="primary-button" onClick={() => setShowCreate((value) => !value)} type="button">{showCreate ? "Cancel" : "Add scheduled repair"}</button></header>
+    {focused ? <header className="workfile-window-header"><div><p className="eyebrow">CRASH OPS PRO</p><h2>Repair order work file</h2></div><button className="secondary-button" onClick={leaveCompletedWorkFile} type="button">Close work-file window</button></header> : <header className="topbar"><div><p className="eyebrow">CORE REPAIR RECORD</p><h2>Repairs</h2><p className="page-description">One record from estimate intake through delivery. Filter, open, and advance the repair without re-entering the job.</p></div><button className="primary-button" onClick={() => setShowCreate((value) => !value)} type="button">{showCreate ? "Cancel" : "Add scheduled repair"}</button></header>}
     {error && <section className="panel import-error"><strong>Repair workspace needs attention</strong><p>{error}</p></section>}
-    {showCreate && <section className="panel repair-create"><label>Location<select value={form.shopId} onChange={(event) => setForm({ ...form, shopId: event.target.value })}>{shops.map((shop) => <option key={shop.id} value={shop.id}>{shop.name}</option>)}</select></label><label>RO / workfile number<input value={form.roNumber} onChange={(event) => setForm({ ...form, roNumber: event.target.value })}/></label><label>Drop date<input type="date" value={form.scheduledDate} onChange={(event) => setForm({ ...form, scheduledDate: event.target.value })}/></label><label>Customer<input value={form.customer} onChange={(event) => setForm({ ...form, customer: event.target.value })}/></label><label>Vehicle<input value={form.vehicle} onChange={(event) => setForm({ ...form, vehicle: event.target.value })}/></label><label>VIN<input value={form.vin} onChange={(event) => setForm({ ...form, vin: event.target.value })}/></label><label>Claim<input value={form.claimNumber} onChange={(event) => setForm({ ...form, claimNumber: event.target.value })}/></label><label>Insurer<input value={form.insurance} onChange={(event) => setForm({ ...form, insurance: event.target.value })}/></label><button className="primary-button" disabled={busy} onClick={() => void createRepair()} type="button">Create repair</button></section>}
+    {!focused && showCreate && <section className="panel repair-create"><label>Location<select value={form.shopId} onChange={(event) => setForm({ ...form, shopId: event.target.value })}>{shops.map((shop) => <option key={shop.id} value={shop.id}>{shop.name}</option>)}</select></label><label>RO / workfile number<input value={form.roNumber} onChange={(event) => setForm({ ...form, roNumber: event.target.value })}/></label><label>Drop date<input type="date" value={form.scheduledDate} onChange={(event) => setForm({ ...form, scheduledDate: event.target.value })}/></label><label>Customer<input value={form.customer} onChange={(event) => setForm({ ...form, customer: event.target.value })}/></label><label>Vehicle<input value={form.vehicle} onChange={(event) => setForm({ ...form, vehicle: event.target.value })}/></label><label>VIN<input value={form.vin} onChange={(event) => setForm({ ...form, vin: event.target.value })}/></label><label>Claim<input value={form.claimNumber} onChange={(event) => setForm({ ...form, claimNumber: event.target.value })}/></label><label>Insurer<input value={form.insurance} onChange={(event) => setForm({ ...form, insurance: event.target.value })}/></label><button className="primary-button" disabled={busy} onClick={() => void createRepair()} type="button">Create repair</button></section>}
 
-    <section className="repair-lifecycle-metrics">{lifecycle.map((status) => <article className="card" key={status}><p>{status}</p><strong>{repairs.filter((repair) => repair.lifecycle_status === status && !payloadText(repair, "fileDisposition")).length}</strong><small>{status === "wip" ? "Active production" : "Lifecycle records"}</small></article>)}</section>
-    <section className="panel repair-filters"><input aria-label="Search repairs" placeholder="Search RO, customer, vehicle, VIN, or claim" value={search} onChange={(event) => setSearch(event.target.value)}/><select aria-label="Filter by shop" value={shopFilter} onChange={(event) => setShopFilter(event.target.value)}><option value="all">All accessible shops</option>{shops.map((shop) => <option key={shop.id} value={shop.id}>{shop.name}</option>)}</select><select aria-label="Filter by lifecycle" value={statusFilter} onChange={(event) => setStatusFilter(event.target.value)}><option value="active">Active repairs</option><option value="closed">Closed jobs</option><option value="cancelled">Cancelled jobs</option><option value="all">All work files</option>{lifecycle.map((status) => <option key={status} value={status}>{status}</option>)}</select></section>
+    {!focused && <><section className="repair-lifecycle-metrics">{lifecycle.map((status) => <article className="card" key={status}><p>{status}</p><strong>{repairs.filter((repair) => repair.lifecycle_status === status && !payloadText(repair, "fileDisposition")).length}</strong><small>{status === "wip" ? "Active production" : "Lifecycle records"}</small></article>)}</section>
+    <section className="panel repair-filters"><input aria-label="Search repairs" placeholder="Search RO, customer, vehicle, VIN, or claim" value={search} onChange={(event) => setSearch(event.target.value)}/><select aria-label="Filter by shop" value={shopFilter} onChange={(event) => setShopFilter(event.target.value)}><option value="all">All accessible shops</option>{shops.map((shop) => <option key={shop.id} value={shop.id}>{shop.name}</option>)}</select><select aria-label="Filter by lifecycle" value={statusFilter} onChange={(event) => setStatusFilter(event.target.value)}><option value="active">Active repairs</option><option value="closed">Closed jobs</option><option value="cancelled">Cancelled jobs</option><option value="all">All work files</option>{lifecycle.map((status) => <option key={status} value={status}>{status}</option>)}</select></section></>}
 
-    <div className="repair-workspace-layout">
-      <section className="repair-card-list">{filtered.length === 0 ? <div className="panel"><p>No repairs match these filters.</p></div> : filtered.map((repair) => {
+    <div className={focused ? "repair-workspace-layout focused" : "repair-workspace-layout"}>
+      {!focused && <section className="repair-card-list">{filtered.length === 0 ? <div className="panel"><p>No repairs match these filters.</p></div> : filtered.map((repair) => {
         const photo = payloadText(repair, "vehiclePhotoDataUrl");
         const bodyHours = payloadNumber(repair, "bodyLaborHours");
         const paintHours = payloadNumber(repair, "paintLaborHours");
@@ -185,7 +183,7 @@ function RepairWorkspace({ initialRepairId }: RepairWorkspaceProps) {
           {repair.scheduled_date && <small>Drop: {repair.scheduled_date}</small>}
           <button className="secondary-button repair-open-button" onClick={() => openWorkFile(repair)} type="button">Open work file in new tab</button>
         </article>;
-      })}</section>
+      })}</section>}
 
       <section className="panel repair-workspace-detail">{!selected ? <p>Select a repair to open its workspace.</p> : <>
         <div className="panel-header"><div><p className="section-label">REPAIR WORKSPACE</p><h3>RO {selected.ro_number} · {selected.vehicle}</h3><p>{selected.customer} · {shopName(selected.shop_id)}</p></div><div className="repair-terminal-actions">{selectedDisposition ? <><span className="repair-delivered">{selectedDisposition}</span><button className="secondary-button" onClick={leaveCompletedWorkFile} type="button">Close work file</button></> : <>{nextStatus && <button className="primary-button" disabled={busy} onClick={() => void advance()} type="button">Advance to {nextStatus}</button>}<button className="secondary-button" disabled={busy} onClick={() => void dispositionJob("closed")} type="button">Close job</button><button className="danger-button" disabled={busy} onClick={() => void dispositionJob("cancelled")} type="button">Cancel job</button></>}</div></div>
