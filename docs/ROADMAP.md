@@ -1,136 +1,86 @@
-# Crash Ops OS — Roadmap
+# Crash Ops Pro — Product Roadmap
 
-## Vision
+## Current Product Direction
 
-Crash Ops OS evolves from an alpha operations dashboard into a unified collision-repair intelligence platform. The central milestone is the **Crash Ops Intelligence Core** — a single evaluation pipeline that produces a shared snapshot consumed by every page.
+Crash Ops Pro is a multi-tenant collision-repair operating system. The current beta connects estimate intake, imported WIP, repair work files, scheduling, production visibility, capacity intelligence, daily action management, parts invoices, and leadership accountability.
 
-## Current Alpha
+The KPI module remains intentionally paused until KPI definitions and authoritative source data are approved.
 
-Shipped or in active use:
+## Shipped Beta Foundation
 
-| Capability | Module | Status |
-|------------|--------|--------|
-| WIP import (Nexsyis CSV) | Import Center | Implemented |
-| Store mapping (shop selection on import) | Import Center | Implemented |
-| Mission Control (regional command center) | Mission Control | Implemented |
-| dAIly Report (operational action list) | dAIly Report | Implemented |
-| WIP Intelligence (workload analytics) | WIP Capacity nav | Implemented |
-| Production Board (stage-column view) | Production Board | Foundation |
-| Repair / shop health scoring | Operations Engine | Implemented |
-| Capacity settings (per-shop configuration) | Administration nav | Implemented |
-| Capacity planning (five-day drop plan) | Scheduling nav | Implemented |
-| Capacity status embed | CapacityIntegrationPanel | Implemented |
-| Stage dictionary | stageDictionary service | Implemented |
-| Operational recommendations | Recommendation Engine | Implemented |
-| Operations engine debug view | KPIs nav | Dev / validation |
-| Reports | Reports nav | Placeholder |
+| Capability | Status | Notes |
+|---|---|---|
+| Supabase authentication | Implemented | Password sign-in/reset, session restoration, protected application shell, logout |
+| Organization foundation | Implemented | Organizations, centers, users, roles, shop access, and row-level security |
+| Nexsyis WIP import | Implemented | Excel/CSV, legacy and technician-grouped layouts, validation and shop matching |
+| Persisted WIP repair files | Implemented | Imports upsert canonical repair orders into Supabase |
+| Estimate Intake | Implemented | CCC estimate reading, image/file selection, repair creation, schedule handoff |
+| Repair Workspace | Implemented | Focused work-file tabs, close/cancel lifecycle, lightweight job costing |
+| Parts invoices | Foundation implemented | Master RO invoice workspace and whole-invoice costing schema |
+| Intelligence Core | Implemented | Shared repair, shop, capacity, risk, and recommendation snapshot |
+| Mission Control | Implemented | Regional operating overview powered by shared intelligence |
+| dAIly Report | Implemented | Persistent action workflow with completion and dismissal tracking |
+| Leadership | Implemented | Ownership, deadlines, missed actions, timelines, notes, and CSV export |
+| Production Board | Implemented foundation | Stage-driven operational view; continue workflow validation |
+| WIP & Capacity | Implemented | Workload, technician grouping, capacity status, and recommendations |
+| Scheduling | Implemented foundation | Editable five-day drop board with capacity guidance |
+| Estimator/Technician Settings | Implemented | Workforce planning inputs; technician KPI calculations remain paused |
+| Cross-device operational settings | Implemented in code | Supabase migration 009 must be applied to production |
+| Mobile/desktop layouts | Implemented foundation | Continue device-level regression testing |
 
-### Alpha limitations
+## Current Sprint Priorities
 
-- Data persists in browser localStorage only (no cloud sync or authentication)
-- Each page recalculates engines independently (no shared intelligence snapshot)
-- Production Board is read-only (no drag-and-drop scheduling)
-- Some WIP metrics inconsistently include or exclude C/HLD
-- Shop lists and number parsing utilities are duplicated across modules
+1. Apply and verify all Supabase migrations through `009_cloud_operational_settings.sql`.
+2. Run an end-to-end Repair Lifecycle test: estimate → repair file → scheduling → production → invoices → close/cancel.
+3. Validate imported WIP repair-file opening and duplicate/upsert behavior with real Nexsyis reports.
+4. Confirm capacity, estimator, technician, and weekly scheduling data remain consistent across two signed-in devices.
+5. Finish repair-workspace invoice totals and parts gross-profit reconciliation.
+6. Complete phone/tablet navigation and wide-table testing.
 
-## Next Phase
+## Near-Term Product Work
 
-### Crash Ops Intelligence Core v1
+### Repair Lifecycle Completion
 
-Unify evaluation into a single snapshot:
+- Maintain one canonical repair-order record across intake, imports, repairs, scheduling, production, and invoices.
+- Preserve repair history when imports refresh existing WIP.
+- Require Actual Delivery before a repair becomes a completed sale.
+- Keep cancellation separate from completed-sale closeout.
+- Add clearer lifecycle status and audit visibility.
 
-- Normalized repair orders
-- Repair health and priority (per repair)
-- Shop health (per shop)
-- Production blockers, parts risk, aging risk, delivery-closeout risk
-- Capacity position (status, thresholds, drop recommendations)
-- Recommended drop count and severity mix
-- Daily action priorities
+### Job Costing and Parts
 
-**Deliverables:**
+- Attach scanned/photo invoices to any repair order.
+- Match parts invoices against parts sales.
+- Calculate parts gross profit and surface exceptions.
+- Add invoice validation and duplicate detection.
 
-1. Define an `IntelligenceSnapshot` type aggregating all engine outputs
-2. Build a snapshot builder function (React-independent) that runs all evaluations once
-3. Migrate pages to consume the snapshot instead of calling engines directly
-4. Align C/HLD exclusion across all WIP hour calculations
+### Reporting
 
-### Editable scheduling board
+- Historical WIP snapshots and week-over-week trend views.
+- Leadership-ready Weekly and Monthly scorecards after metric definitions are approved.
+- Exportable operating and financial exception reports.
 
-- Drag-and-drop repair movement on Production Board
-- Persist schedule changes (initially localStorage, later cloud)
-- Validate moves against capacity and stage rules
+## Integration Roadmap
 
-### Technician workload balancing
+| Integration | Current state | Next gate |
+|---|---|---|
+| Nexsyis | File import active | Expand import history, validation, and reconciliation |
+| CCC ONE | Estimate intake active; Secure Share not connected | Complete developer/CIECA/Secure Share requirements and canonical field mapping |
+| ProfitNet | Not started | Define export format and build a dedicated adapter after Nexsyis stability |
+| QuickBooks | Concept only | Define parts-receiving and gross-profit accounting workflow |
+| Enterprise ARMS | Concept only | Define rental-status and rental-cost data access |
 
-- Per-technician labor hours in process
-- Assignment recommendations based on capacity and skill mix
-- Integration with Production Board scheduling
+## Deliberately Paused
 
-### Estimator workload
+- Technician and shop KPI calculations are not published yet.
+- KPI definitions must identify the authoritative source, calculation, time window, exclusions, and accountable role before development resumes.
 
-- Per-estimator open repair count and labor value
-- Blueprint queue visibility and prioritization
+## Release Standards
 
-### Parts ETA and sourcing risk
+Every release must:
 
-- Parts arrival tracking beyond stage code (PO vs BOP)
-- ETA-based risk scoring
-- Alternate sourcing escalation recommendations
-
-### Blueprint readiness
-
-- Blueprint completion criteria
-- Large-repair planning gates before production assignment
-- Integration with capacity severity mix
-
-### Bottleneck detection
-
-- Stage-level dwell time analysis
-- Identify shops or stages where repairs accumulate
-- Automated bottleneck alerts in Mission Control
-
-## Later Phase
-
-| Capability | Description |
-|------------|-------------|
-| Multi-shop optimization | Cross-location workload balancing and drop allocation |
-| Predictive delivery dates | Estimated completion based on stage, parts, and capacity |
-| Trend detection | Week-over-week WIP, cycle time, and throughput trends |
-| Secure authentication | User accounts, role-based access |
-| Cloud persistence | Shared data across devices and locations |
-| CCC Secure Share integration | Direct management-system data feeds |
-| Other management-system integrations | Beyond Nexsyis CSV import |
-| SaaS deployment | Hosted multi-tenant platform |
-
-## Module Maturity
-
-| Module | Maturity | Notes |
-|--------|----------|-------|
-| Import Center | Production-ready (alpha) | CSV validation, shop mapping |
-| Mission Control | Production-ready (alpha) | Regional overview, top priorities |
-| dAIly Report | Production-ready (alpha) | Action checklist with completion tracking |
-| WIP Intelligence | Production-ready (alpha) | Some metric inconsistencies to resolve |
-| Production Board | Foundation | Read-only board; hardcoded columns |
-| Capacity Planning | Production-ready (alpha) | Five-day plan with severity mix |
-| WIP Capacity Settings | Production-ready (alpha) | Full settings editor with preview |
-| Operations Engine | Stable | Core scoring logic complete |
-| Capacity Engine | Stable | Four-status evaluation complete |
-| Recommendation Engine | Stable | Six recommendation types |
-| Stage Dictionary | Stable | Ten defined stages + unknown fallback |
-| Intelligence Core | Not started | Target for next phase |
-| Reports | Not started | Placeholder navigation item |
-| Authentication / Cloud | Not started | Later phase |
-
-## Intelligence Core Migration Order
-
-Suggested page migration sequence when building Intelligence Core v1:
-
-1. **OperationsEngineTest (KPIs)** — validate snapshot output against current engine calls
-2. **Mission Control** — highest-value consumer; regional + repair health
-3. **dAIly Report** — recommendations from snapshot priorities
-4. **Production Board** — repair health from snapshot
-5. **WIP Intelligence** — replace component-local aggregation with snapshot metrics
-6. **CapacityIntegrationPanel** — capacity section of snapshot
-7. **Capacity Planning / WipCapacitySettings** — capacity section of snapshot
-
-Each migration should preserve existing displayed values. Run `npm run build` and visually validate after each step.
+1. Build with strict TypeScript and Vite without errors.
+2. Preserve tenant isolation and row-level security.
+3. Pass estimate, WIP import, repair open/edit, close/cancel, scheduling, and invoice smoke tests.
+4. Be checked on desktop and mobile layouts.
+5. Include required Supabase migrations and updated documentation.

@@ -89,7 +89,9 @@ Is it a business calculation (no React)?
   └── New engine domain          → src/engine/ (new file, no React imports)
 
 Is it data access, normalization, or configuration?
-  ├── Import / localStorage      → src/services/importedData.ts
+  ├── Import cache               → src/services/importedData.ts
+  ├── Supabase persistence       → src/services/operationsData.ts, repairWorkspaceData.ts
+  ├── Cloud settings/scheduling  → src/services/*Settings.ts, scheduleStorage.ts
   ├── Stage definitions          → src/services/stageDictionary.ts
   ├── Recommendations            → src/services/recommendationEngine.ts
   ├── Capacity settings          → src/services/capacitySettings.ts

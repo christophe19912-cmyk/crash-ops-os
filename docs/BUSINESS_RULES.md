@@ -100,7 +100,7 @@ Each shop has store-specific settings in `ShopCapacitySettings`:
 | `maximumDailyDrops` | Daily drop limit |
 | `schedulingBufferPercent` | Buffer subtracted from weekly output target |
 
-Settings are stored per shop in localStorage and edited via Administration (WipCapacitySettings).
+Settings are stored per shop in Supabase and cached in localStorage for resilient reads. They are edited through Administration (WipCapacitySettings).
 
 ### Capacity statuses
 
@@ -199,7 +199,7 @@ Nexsyis WIP CSV columns mapped by `normalizeRepairOrders()`:
 | `Completed Date` | `completedDate` |
 | `Vehicle Center Tab` | `vehicleStatus` |
 
-During import, the user selects a target shop. Import Center validates required columns and row-level data before writing to localStorage.
+During import, the user selects a target shop. Import Center validates required columns and row-level data, caches the applied report locally, and persists canonical repair-order work files plus import history to Supabase.
 
 ## Supported Shops (Alpha)
 

@@ -1,75 +1,39 @@
-# React + TypeScript + Vite
+# Crash Ops Pro
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Crash Ops Pro is a React/TypeScript collision-repair operating system for estimate intake, WIP imports, repair work files, scheduling, production visibility, capacity planning, job costing, and leadership accountability.
 
-Currently, two official plugins are available:
+## Current Stack
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+- React 19 + TypeScript
+- Vite
+- Supabase Auth and Postgres
+- Vercel hosting
+- PapaParse and SheetJS for Nexsyis CSV/Excel imports
 
-## React Compiler
+## Local Setup
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+1. Install dependencies with `npm install`.
+2. Copy `.env.example` to `.env.local`.
+3. Set the Supabase URL and publishable key.
+4. Run the Supabase migrations in numerical order.
+5. Start the application with `npm run dev`.
 
-## Expanding the ESLint configuration
+Never place the Supabase service-role key in browser environment variables.
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+## Required Validation
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-
+```bash
+npm run build
+npm run lint
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+The repository currently has pre-existing whole-repository lint debt in archived backup files and the Estimate Intake API. Changed production files should be linted directly until that cleanup is completed.
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+## Current Product Decisions
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+- The KPI module is intentionally absent from navigation until KPI definitions and authoritative source data are approved.
+- Supabase is the shared source of truth; browser storage is retained as a local cache for operational continuity.
+- Imported WIP and estimate intake must converge on the same canonical repair-order record.
+- Closing a repair represents a completed sale; cancelling a repair is a separate lifecycle outcome.
 
-```
+See [docs/ROADMAP.md](docs/ROADMAP.md), [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md), and [docs/BUSINESS_RULES.md](docs/BUSINESS_RULES.md).

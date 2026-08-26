@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type {
   RepairSeverity,
   ScheduleDay,
@@ -14,8 +14,11 @@ import {
 import {
   SCHEDULE_DAYS,
   addScheduledDrop,
+  deleteScheduledDropFromCloud,
   deleteScheduledDrop,
   loadScheduledDrops,
+  loadScheduledDropsFromCloud,
+  saveScheduledDropToCloud,
   updateScheduledDrop,
 } from "./services/scheduleStorage";
 
@@ -56,7 +59,7 @@ function capacityStatusClass(status: string) {
 }
 
 function SchedulingBoard() {
-  const importedRecord = useMemo(loadImportedWip, []);
+  const importedRecord = useMemo(() => loadImportedWip(), []);
 
   const repairOrders = useMemo(
     () => normalizeRepairOrders(importedRecord),
@@ -80,6 +83,23 @@ function SchedulingBoard() {
 
   const [form, setForm] = useState<DropForm>(emptyForm);
   const [showForm, setShowForm] = useState(false);
+  const [syncMessage, setSyncMessage] = useState("");
+
+  useEffect(() => {
+    let active = true;
+    void loadScheduledDropsFromCloud()
+      .then((cloudDrops) => {
+        if (!active) return;
+        setDrops(cloudDrops);
+        setSyncMessage("This week’s schedule is synced across devices.");
+      })
+      .catch((error: unknown) => {
+        if (active) setSyncMessage(error instanceof Error ? error.message : "The schedule could not be synced.");
+      });
+    return () => {
+      active = false;
+    };
+  }, []);
 
   const shopIntelligence =
     intelligence.shops.find(
@@ -144,6 +164,13 @@ function SchedulingBoard() {
     });
 
     setDrops(next);
+    const added = next.find((drop) => !drops.some((existing) => existing.id === drop.id));
+    if (added) {
+      setSyncMessage("Saving scheduled drop…");
+      void saveScheduledDropToCloud(added)
+        .then(() => setSyncMessage("This week’s schedule is synced across devices."))
+        .catch((error: unknown) => setSyncMessage(error instanceof Error ? error.message : "Scheduled drop could not be synced."));
+    }
     setForm(emptyForm);
     setShowForm(false);
   }
@@ -152,16 +179,20 @@ function SchedulingBoard() {
     drop: ScheduledDrop,
     day: ScheduleDay,
   ) {
-    setDrops(
-      updateScheduledDrop(drops, {
-        ...drop,
-        day,
-      }),
-    );
+    const updated = { ...drop, day };
+    setDrops(updateScheduledDrop(drops, updated));
+    setSyncMessage("Saving schedule change…");
+    void saveScheduledDropToCloud(updated)
+      .then(() => setSyncMessage("This week’s schedule is synced across devices."))
+      .catch((error: unknown) => setSyncMessage(error instanceof Error ? error.message : "Schedule change could not be synced."));
   }
 
   function removeDrop(id: string) {
     setDrops(deleteScheduledDrop(drops, id));
+    setSyncMessage("Removing scheduled drop…");
+    void deleteScheduledDropFromCloud(id)
+      .then(() => setSyncMessage("This week’s schedule is synced across devices."))
+      .catch((error: unknown) => setSyncMessage(error instanceof Error ? error.message : "Scheduled drop could not be removed from the cloud."));
   }
 
   if (
@@ -242,6 +273,8 @@ function SchedulingBoard() {
           </button>
         </div>
       </header>
+
+      {syncMessage && <div className="context-banner">{syncMessage}</div>}
 
       <section className="scheduling-summary-grid">
         <article className="card">

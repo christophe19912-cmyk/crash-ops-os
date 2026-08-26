@@ -1,9 +1,11 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type {
   EstimatorSettings as EstimatorSettingsModel,
 } from "./models/EstimatorSettings";
 import {
   ESTIMATOR_ROLES,
+  loadEstimatorSettingsFromCloud,
+  saveEstimatorSettingToCloud,
   seedEstimatorSettings,
   upsertEstimatorSettings,
 } from "./services/estimatorSettings";
@@ -28,10 +30,7 @@ function normalizeEstimator(name: string) {
 }
 
 function EstimatorSettings() {
-  const importedRecord = useMemo(
-    loadImportedWip,
-    [],
-  );
+  const importedRecord = useMemo(() => loadImportedWip(), []);
 
   const repairOrders = useMemo(
     () => normalizeRepairOrders(importedRecord),
@@ -66,6 +65,23 @@ function EstimatorSettings() {
 
   const [selectedShop, setSelectedShop] =
     useState("All Locations");
+  const [syncMessage, setSyncMessage] = useState("");
+
+  useEffect(() => {
+    let active = true;
+    void loadEstimatorSettingsFromCloud(estimatorPairs)
+      .then((cloudSettings) => {
+        if (!active) return;
+        setSettings(cloudSettings);
+        setSyncMessage("Estimator settings are synced across devices.");
+      })
+      .catch((error: unknown) => {
+        if (active) setSyncMessage(error instanceof Error ? error.message : "Estimator settings could not be synced.");
+      });
+    return () => {
+      active = false;
+    };
+  }, [estimatorPairs]);
 
   const shops = Array.from(
     new Set(
@@ -96,6 +112,10 @@ function EstimatorSettings() {
         updated,
       ),
     );
+    setSyncMessage("Saving estimator setting…");
+    void saveEstimatorSettingToCloud(updated)
+      .then(() => setSyncMessage("Estimator settings are synced across devices."))
+      .catch((error: unknown) => setSyncMessage(error instanceof Error ? error.message : "Estimator setting could not be synced."));
   }
 
   if (!importedRecord || repairOrders.length === 0) {
@@ -157,6 +177,8 @@ function EstimatorSettings() {
           </select>
         </div>
       </header>
+
+      {syncMessage && <div className="context-banner">{syncMessage}</div>}
 
       <section className="panel estimator-settings-note">
         <strong>Important</strong>

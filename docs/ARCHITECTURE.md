@@ -11,7 +11,8 @@ Crash Ops OS helps collision-repair managers, general managers, regional leaders
 | UI | React 19, TypeScript |
 | Build | Vite 8 |
 | CSV import | PapaParse |
-| Persistence | Browser `localStorage` (alpha) |
+| Persistence | Supabase/Postgres with local browser cache for resilient reads |
+| Authentication | Supabase Auth with organization and shop-scoped access |
 | Routing | State-driven navigation in `App.tsx` (no React Router) |
 
 ## Directory Layout
@@ -32,15 +33,21 @@ Navigation labels in the sidebar do not always match internal file names. Use th
 
 | Sidebar label | Component | Primary engines / services |
 |---------------|-----------|----------------------------|
-| Mission Control | `MissionControl.tsx` | `operationsEngine`, `importedData`, `stageDictionary`, `CapacityIntegrationPanel` |
-| dAIly Report | `DailyReport.tsx` | `recommendationEngine`, `importedData` |
-| Import Center | `ImportCenter.tsx` | PapaParse, writes to `importedData` localStorage |
-| Production Board | `ProductionBoard.tsx` | `operationsEngine`, `stageDictionary`, `importedData` |
-| WIP Capacity | `WipIntelligence.tsx` | `importedData`, `stageDictionary`, `CapacityIntegrationPanel` |
-| Scheduling | `CapacityPlanning.tsx` | `capacityPlanningEngine`, `capacitySettings`, `importedData` |
-| KPIs | `OperationsEngineTest.tsx` | `operationsEngine` (debug / validation view) |
-| Reports | Placeholder in `App.tsx` | Not implemented |
-| Administration | `WipCapacitySettings.tsx` | `capacityEngine`, `capacitySettings`, `importedData` |
+| Dashboard | `MissionControl.tsx` | Shared Intelligence Core, capacity, risk, recommendations |
+| Repairs | `RepairWorkspace.tsx` | Supabase repair work files, lifecycle, job costing |
+| Parts Invoices | `PartsInvoices.tsx` | Repair-order invoice workspace |
+| AI Intake | `EstimateIntake.tsx` | Estimate reader, repair creation, scheduling handoff |
+| Schedule | `SchedulingBoard.tsx` | Capacity-aware weekly scheduling with cloud persistence |
+| Production | `ProductionBoard.tsx` | Shared Intelligence Core and stage dictionary |
+| WIP & Capacity | `WipIntelligence.tsx` | Imported WIP, technician grouping, capacity intelligence |
+| dAIly Report | `DailyReport.tsx` | Persistent operational action workflow |
+| Leadership | `LeadershipDashboard.tsx` | Accountability, audit history, CSV export |
+| Estimator Load | `EstimatorLoadDashboard.tsx` | Estimator workload engine |
+| Import Center | `ImportCenter.tsx` | Excel/CSV parsing, local cache, Supabase WIP persistence |
+| Capacity Settings | `WipCapacitySettings.tsx` | Capacity engine inputs persisted to Supabase |
+| Estimator Settings | `EstimatorSettings.tsx` | Estimator planning inputs persisted to Supabase |
+| Technician Settings | `TechnicianSettings.tsx` | Technician planning inputs persisted to Supabase; KPIs paused |
+| Organization | `OrganizationModule.tsx` | Company, centers, users, and planned integrations |
 
 Shared embed:
 
@@ -51,10 +58,12 @@ Shared embed:
 ## Data Flow
 
 ```
-Nexsyis WIP CSV
+Nexsyis WIP Excel/CSV or CCC Estimate Intake
       │
       ▼
-Import Center  ──►  localStorage ("crashOpsLastWipImport")
+Import/Intake  ──►  Supabase repair_orders + import history
+      │                    │
+      └──► local cache     └──► Repair Workspace / Parts / Scheduling
       │
       ▼
 normalizeRepairOrders()  ──►  RepairOrder[]
@@ -71,7 +80,7 @@ Page components (display only)
 Capacity settings follow a parallel path:
 
 ```
-WipCapacitySettings  ──►  localStorage ("crashOpsCapacitySettings")
+Settings screens  ──►  Supabase settings tables + local cache
       │
       ▼
 getCapacitySettings(shop)  ──►  capacityEngine / capacityPlanningEngine
@@ -152,22 +161,9 @@ Single source of truth for imported production-stage meanings.
 9. **Prefer focused modules under ~300 lines** when practical; do not rewrite large files unless necessary.
 10. **Preserve working behavior while refactoring.**
 
-## Current State vs Target: Intelligence Core
+## Crash Ops Intelligence Core v1
 
-### Current (alpha)
-
-Each page independently:
-
-1. Loads imported WIP from localStorage
-2. Normalizes repair orders
-3. Calls one or more engines
-4. Renders results
-
-There is no shared intelligence snapshot. The same repair may be evaluated multiple times across Mission Control, Production Board, WIP Intelligence, and Capacity panels.
-
-### Target: Crash Ops Intelligence Core v1
-
-A unified snapshot should provide:
+The implemented shared snapshot provides:
 
 - Normalized repair orders
 - Repair health and priority
@@ -177,7 +173,7 @@ A unified snapshot should provide:
 - Recommended drop count and severity mix
 - Daily action priorities
 
-Pages should consume this snapshot rather than independently recalculating the same information. See `docs/ROADMAP.md` for the migration plan.
+Mission Control, Production Board, WIP Intelligence, Scheduling, and dAIly Report consume this shared evaluation path. New operational views must use the same core rather than introducing parallel calculations.
 
 ## Persistence Keys
 
@@ -185,6 +181,9 @@ Pages should consume this snapshot rather than independently recalculating the s
 |-----|---------|------------|
 | `crashOpsLastWipImport` | Raw imported WIP record (rows + metadata) | Import Center |
 | `crashOpsCapacitySettings` | Per-shop `ShopCapacitySettings` objects | WipCapacitySettings (Administration) |
+| `crashOpsEstimatorSettings` | Cached estimator settings | Estimator Settings |
+| `crashOpsTechnicianSettings` | Cached technician settings | Technician Settings |
+| `crashOpsScheduledDrops` | Cached current-week schedule | Scheduling Board |
 
 ## Known Structural Debt (Alpha)
 
@@ -192,12 +191,10 @@ These are documented gaps — not blockers for alpha, but patterns to avoid exte
 
 | Gap | Detail |
 |-----|--------|
-| Per-page engine calls | No shared intelligence snapshot yet |
-| C/HLD in WIP totals | Capacity engines exclude C/HLD; WIP Intelligence and capacity settings preview include all imported orders in some metrics |
-| Duplicated utilities | `cleanNumber` in both `importedData.ts` and `ImportCenter.tsx` |
-| Duplicated shop lists | `SHOP_OPTIONS` in `capacitySettings.ts` and `shopOptions` in `ImportCenter.tsx` |
+| Local cache reactivity | Some views initialize from cached WIP and require a refresh after a new import |
+| Schema rollout | Application code and Supabase migrations must be deployed together |
+| Source-of-truth mapping | Nexsyis, CCC ONE, and future ProfitNet fields need one canonical adapter contract |
 | Hardcoded board columns | `ProductionBoard.tsx` stage column map parallels `stageDictionary.ts` |
-| Component-local scoring | `WipIntelligence.tsx` has `buildShopSummaries` and `getPressureStatus` outside engines |
 | Large files | Several components exceed 300 lines (Production Board, WIP Intelligence, Import Center, Mission Control) |
 
 When refactoring these areas, consolidate into the owning engine or service — do not add parallel implementations.

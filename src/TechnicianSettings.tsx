@@ -1,9 +1,11 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type {
   TechnicianSettings as TechnicianSettingsModel,
 } from "./models/TechnicianSettings";
 import {
   TECHNICIAN_ROLES,
+  loadTechnicianSettingsFromCloud,
+  saveTechnicianSettingToCloud,
   seedTechnicianSettings,
   upsertTechnicianSettings,
 } from "./services/technicianSettings";
@@ -56,6 +58,23 @@ function TechnicianSettings() {
 
   const [selectedShop, setSelectedShop] =
     useState("All Locations");
+  const [syncMessage, setSyncMessage] = useState("");
+
+  useEffect(() => {
+    let active = true;
+    void loadTechnicianSettingsFromCloud(technicianPairs)
+      .then((cloudSettings) => {
+        if (!active) return;
+        setSettings(cloudSettings);
+        setSyncMessage("Technician settings are synced across devices.");
+      })
+      .catch((error: unknown) => {
+        if (active) setSyncMessage(error instanceof Error ? error.message : "Technician settings could not be synced.");
+      });
+    return () => {
+      active = false;
+    };
+  }, [technicianPairs]);
 
   const shops = Array.from(
     new Set(settings.map((setting) => setting.shop)),
@@ -76,6 +95,10 @@ function TechnicianSettings() {
     setSettings((existing) =>
       upsertTechnicianSettings(existing, updated),
     );
+    setSyncMessage("Saving technician setting…");
+    void saveTechnicianSettingToCloud(updated)
+      .then(() => setSyncMessage("Technician settings are synced across devices."))
+      .catch((error: unknown) => setSyncMessage(error instanceof Error ? error.message : "Technician setting could not be synced."));
   }
 
   if (!importedRecord || repairOrders.length === 0) {
@@ -136,6 +159,8 @@ function TechnicianSettings() {
           </select>
         </div>
       </header>
+
+      {syncMessage && <div className="context-banner">{syncMessage}</div>}
 
       <section className="panel estimator-settings-note">
         <strong>Planning inputs only</strong>

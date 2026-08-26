@@ -1,11 +1,12 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { ShopCapacitySettings } from "./models/CapacitySettings";
 import { evaluateCapacity } from "./engine/capacityEngine";
 import {
   SHOP_OPTIONS,
   getCapacitySettings,
-  resetCapacitySettings,
-  saveCapacitySettings,
+  loadCapacitySettingsFromCloud,
+  resetCapacitySettingsInCloud,
+  saveCapacitySettingsToCloud,
 } from "./services/capacitySettings";
 import {
   loadImportedWip,
@@ -19,7 +20,7 @@ type NumericSettingKey = Exclude<
 >;
 
 function WipCapacitySettings() {
-  const importedRecord = useMemo(loadImportedWip, []);
+  const importedRecord = useMemo(() => loadImportedWip(), []);
 
   const importedOrders = useMemo(
     () => normalizeRepairOrders(importedRecord),
@@ -42,6 +43,23 @@ function WipCapacitySettings() {
     );
 
   const [savedMessage, setSavedMessage] = useState("");
+
+  useEffect(() => {
+    let active = true;
+    void loadCapacitySettingsFromCloud()
+      .then((store) => {
+        if (!active) return;
+        setSettings(store[selectedShop] || getCapacitySettings(selectedShop));
+      })
+      .catch((error: unknown) => {
+        if (active) {
+          setSavedMessage(error instanceof Error ? error.message : "Cloud settings could not be loaded.");
+        }
+      });
+    return () => {
+      active = false;
+    };
+  }, [selectedShop]);
 
   const shopOrders = useMemo(
     () =>
@@ -84,24 +102,27 @@ function WipCapacitySettings() {
     }));
   }
 
-  function saveSettings() {
-    const saved = saveCapacitySettings({
-      ...settings,
-      shop: selectedShop,
-    });
-
-    setSettings(saved);
-    setSavedMessage(
-      `${selectedShop} capacity settings saved in this browser.`,
-    );
+  async function saveSettings() {
+    try {
+      const saved = await saveCapacitySettingsToCloud({
+        ...settings,
+        shop: selectedShop,
+      });
+      setSettings(saved);
+      setSavedMessage(`${selectedShop} capacity settings saved for all signed-in devices.`);
+    } catch (error: unknown) {
+      setSavedMessage(error instanceof Error ? error.message : "Capacity settings could not be saved.");
+    }
   }
 
-  function resetSettings() {
-    const reset = resetCapacitySettings(selectedShop);
-    setSettings(reset);
-    setSavedMessage(
-      `${selectedShop} settings restored to the starting defaults.`,
-    );
+  async function resetSettings() {
+    try {
+      const reset = await resetCapacitySettingsInCloud(selectedShop);
+      setSettings(reset);
+      setSavedMessage(`${selectedShop} settings restored and synced.`);
+    } catch (error: unknown) {
+      setSavedMessage(error instanceof Error ? error.message : "Capacity settings could not be reset.");
+    }
   }
 
   return (
