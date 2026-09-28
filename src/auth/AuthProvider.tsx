@@ -9,6 +9,17 @@ import {
 import type { Session, User } from "@supabase/supabase-js";
 import { supabase } from "../lib/supabase";
 
+const TEST_MODE = import.meta.env.VITE_TEST_MODE === "true";
+const TEST_USER = {
+  id: "00000000-0000-4000-8000-000000000001",
+  aud: "authenticated",
+  role: "authenticated",
+  email: "test@crashops.local",
+  app_metadata: {},
+  user_metadata: { full_name: "Crash Ops Test User" },
+  created_at: new Date(0).toISOString(),
+} as User;
+
 type AuthContextValue = {
   session: Session | null;
   user: User | null;
@@ -22,11 +33,11 @@ const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
-  const [loading, setLoading] = useState(Boolean(supabase));
+  const [loading, setLoading] = useState(TEST_MODE ? false : Boolean(supabase));
   const [passwordRecovery, setPasswordRecovery] = useState(false);
 
   useEffect(() => {
-    if (!supabase) {
+    if (TEST_MODE || !supabase) {
       setLoading(false);
       return;
     }
@@ -57,12 +68,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const value = useMemo<AuthContextValue>(
     () => ({
       session,
-      user: session?.user ?? null,
+      user: TEST_MODE ? TEST_USER : session?.user ?? null,
       loading,
       passwordRecovery,
       clearPasswordRecovery: () => setPasswordRecovery(false),
       signOut: async () => {
-        if (!supabase) return;
+        if (TEST_MODE || !supabase) return;
         const { error } = await supabase.auth.signOut();
         if (error) throw error;
       },
