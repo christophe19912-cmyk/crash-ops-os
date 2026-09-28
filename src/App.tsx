@@ -2,6 +2,7 @@ import { useState } from "react";
 import "./App.css";
 import ImportCenter from "./ImportCenter";
 import WipIntelligence from "./WipIntelligence";
+import MobileWipDashboard from "./MobileWipDashboard";
 import DailyReport from "./DailyReport";
 import MissionControl from "./MissionControl";
 import ProductionBoard from "./ProductionBoard";
@@ -28,68 +29,47 @@ type Page =
 type NavigationGroup = { label: string; items: Array<{ page: Page; label: string; icon: string }> };
 
 const navigationGroups: NavigationGroup[] = [
-  {
-    label: "Command",
-    items: [
-      { page: "Mission Control", label: "Dashboard", icon: "MC" },
-      { page: "Repairs", label: "Repairs", icon: "RP" },
-      { page: "Parts Invoices", label: "Parts Invoices", icon: "PI" },
-    ],
-  },
-  {
-    label: "Repair Flow",
-    items: [
-      { page: "Estimate Intake", label: "AI Intake", icon: "AI" },
-      { page: "Scheduling", label: "Schedule", icon: "SC" },
-      { page: "Production Board", label: "Production", icon: "PB" },
-      { page: "WIP Capacity", label: "WIP & Capacity", icon: "WP" },
-    ],
-  },
-  {
-    label: "Intelligence",
-    items: [
-      { page: "dAIly Report", label: "dAIly Report", icon: "DR" },
-      { page: "Leadership", label: "Leadership", icon: "LD" },
-      { page: "Estimator Load", label: "Estimator Load", icon: "EL" },
-    ],
-  },
-  {
-    label: "Organization",
-    items: [
-      { page: "Organization Company", label: "Company", icon: "CO" },
-      { page: "Organization Centers", label: "Centers", icon: "CE" },
-      { page: "Organization Users", label: "Users", icon: "US" },
-      { page: "Organization Integrations", label: "Integrations", icon: "IN" },
-    ],
-  },
-  {
-    label: "System",
-    items: [
-      { page: "Import Center", label: "Import Center", icon: "IM" },
-      { page: "Administration", label: "Capacity Settings", icon: "CS" },
-      { page: "Estimator Settings", label: "Estimator Settings", icon: "ES" },
-      { page: "Technician Settings", label: "Technician Settings", icon: "TS" },
-      { page: "Beta Setup", label: "Beta Setup", icon: "BT" },
-    ],
-  },
+  { label: "Command", items: [
+    { page: "Mission Control", label: "Dashboard", icon: "MC" },
+    { page: "Repairs", label: "Repairs", icon: "RP" },
+    { page: "Parts Invoices", label: "Parts Invoices", icon: "PI" },
+  ]},
+  { label: "Repair Flow", items: [
+    { page: "Estimate Intake", label: "AI Intake", icon: "AI" },
+    { page: "Scheduling", label: "Schedule", icon: "SC" },
+    { page: "Production Board", label: "Production", icon: "PB" },
+    { page: "WIP Capacity", label: "WIP & Capacity", icon: "WP" },
+  ]},
+  { label: "Intelligence", items: [
+    { page: "dAIly Report", label: "dAIly Report", icon: "DR" },
+    { page: "Leadership", label: "Leadership", icon: "LD" },
+    { page: "Estimator Load", label: "Estimator Load", icon: "EL" },
+  ]},
+  { label: "Organization", items: [
+    { page: "Organization Company", label: "Company", icon: "CO" },
+    { page: "Organization Centers", label: "Centers", icon: "CE" },
+    { page: "Organization Users", label: "Users", icon: "US" },
+    { page: "Organization Integrations", label: "Integrations", icon: "IN" },
+  ]},
+  { label: "System", items: [
+    { page: "Import Center", label: "Import Center", icon: "IM" },
+    { page: "Administration", label: "Capacity Settings", icon: "CS" },
+    { page: "Estimator Settings", label: "Estimator Settings", icon: "ES" },
+    { page: "Technician Settings", label: "Technician Settings", icon: "TS" },
+    { page: "Beta Setup", label: "Beta Setup", icon: "BT" },
+  ]},
 ];
 
 function App() {
   const { signOut } = useAuth();
-  const profile = useUserProfile();
-  const organization = useOrganization();
-  const role = useRole();
-  const contextStatus = useApplicationContextStatus();
+  const profile = useUserProfile(); const organization = useOrganization(); const role = useRole(); const contextStatus = useApplicationContextStatus();
   const requestedParams = new URLSearchParams(window.location.search);
   const requestedRepairId = requestedParams.get("repairId") ?? requestedParams.get("ro");
-  const requestedRoNumber = requestedParams.get("roNumber");
-  const requestedShopId = requestedParams.get("shopId");
+  const requestedRoNumber = requestedParams.get("roNumber"); const requestedShopId = requestedParams.get("shopId");
+  const mobileWip = requestedParams.get("page") === "wip-mobile" || window.location.pathname === "/wip";
   const focusedWorkFile = Boolean(requestedRepairId || requestedRoNumber);
   const [activePage, setActivePage] = useState<Page>(focusedWorkFile || requestedParams.get("page") === "repairs" ? "Repairs" : "Mission Control");
-
-  const roleLabel = role
-    ? role.split("_").map((word) => word[0].toUpperCase() + word.slice(1)).join(" ")
-    : "Member";
+  const roleLabel = role ? role.split("_").map((word) => word[0].toUpperCase() + word.slice(1)).join(" ") : "Member";
 
   function renderPage() {
     if (activePage === "Mission Control") return <MissionControl />;
@@ -107,60 +87,19 @@ function App() {
     if (activePage === "Estimator Settings") return <EstimatorSettings />;
     if (activePage === "Technician Settings") return <TechnicianSettings />;
     if (activePage === "Beta Setup") return <BetaSetup />;
-    if (activePage.startsWith("Organization ")) {
-      return <OrganizationModule page={activePage.replace("Organization ", "") as "Company" | "Centers" | "Users" | "Integrations"} />;
-    }
+    if (activePage.startsWith("Organization ")) return <OrganizationModule page={activePage.replace("Organization ", "") as "Company" | "Centers" | "Users" | "Integrations"} />;
     return null;
   }
 
-  if (focusedWorkFile) {
-    return <main className="standalone-workfile"><RepairWorkspace initialRepairId={requestedRepairId} initialRoNumber={requestedRoNumber} initialShopId={requestedShopId} focused /></main>;
-  }
+  if (mobileWip) return <main className="standalone-mobile-wip"><MobileWipDashboard /></main>;
+  if (focusedWorkFile) return <main className="standalone-workfile"><RepairWorkspace initialRepairId={requestedRepairId} initialRoNumber={requestedRoNumber} initialShopId={requestedShopId} focused /></main>;
 
-  return (
-    <div className="app">
-      <aside className="sidebar">
-        <div className="brand">
-          <div className="brand-mark">CO</div>
-          <div><h1>Crash Ops Pro</h1><p>Operations System</p></div>
-        </div>
-
-        <nav className="navigation">
-          {navigationGroups.map((group) => (
-            <div key={group.label}>
-              <div className="nav-section-label">{group.label}</div>
-              {group.items.map((item) => (
-                <button
-                  className={activePage === item.page ? "nav-button active" : "nav-button"}
-                  key={item.page}
-                  onClick={() => setActivePage(item.page)}
-                  type="button"
-                >
-                  <span className="nav-icon">{item.icon}</span>
-                  <span>{item.label}</span>
-                </button>
-              ))}
-            </div>
-          ))}
-        </nav>
-
-        <div className="sidebar-footer">
-          <div className="workspace-identity">
-            <span className="workspace-avatar">{(profile?.full_name || profile?.email || "U").charAt(0).toUpperCase()}</span>
-            <div><p>{profile?.full_name || profile?.email || "Crash Ops User"}</p><span>{organization?.name || roleLabel}</span></div>
-          </div>
-          <button className="logout-button" onClick={() => void signOut()} type="button">Sign out</button>
-          <span className="version-label">Crash Ops Pro · Beta</span>
-        </div>
-      </aside>
-
-      <main className="main">
-        {contextStatus.loading && <div className="context-banner">Loading your organization…</div>}
-        {contextStatus.error && <div className="context-banner error">{contextStatus.error} Contact your administrator if this continues.</div>}
-        {renderPage()}
-      </main>
-    </div>
-  );
+  return <div className="app">
+    <aside className="sidebar"><div className="brand"><div className="brand-mark">CO</div><div><h1>Crash Ops Pro</h1><p>Operations System</p></div></div>
+      <nav className="navigation">{navigationGroups.map(group=><div key={group.label}><div className="nav-section-label">{group.label}</div>{group.items.map(item=><button className={activePage===item.page?"nav-button active":"nav-button"} key={item.page} onClick={()=>setActivePage(item.page)} type="button"><span className="nav-icon">{item.icon}</span><span>{item.label}</span></button>)}</div>)}</nav>
+      <div className="sidebar-footer"><div className="workspace-identity"><span className="workspace-avatar">{(profile?.full_name || profile?.email || "U").charAt(0).toUpperCase()}</span><div><p>{profile?.full_name || profile?.email || "Crash Ops User"}</p><span>{organization?.name || roleLabel}</span></div></div><button className="logout-button" onClick={()=>void signOut()} type="button">Sign out</button><span className="version-label">Crash Ops Pro · Beta</span></div>
+    </aside>
+    <main className="main">{contextStatus.loading&&<div className="context-banner">Loading your organization…</div>}{contextStatus.error&&<div className="context-banner error">{contextStatus.error} Contact your administrator if this continues.</div>}{renderPage()}</main>
+  </div>;
 }
-
 export default App;
