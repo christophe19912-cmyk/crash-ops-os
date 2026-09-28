@@ -9,6 +9,8 @@ import {
 import { supabase } from "../lib/supabase";
 import { useAuth } from "./AuthProvider";
 
+const TEST_MODE = import.meta.env.VITE_TEST_MODE === "true";
+
 export type AppRole =
   | "platform_admin"
   | "organization_admin"
@@ -35,6 +37,26 @@ export type Organization = {
   is_active: boolean;
 };
 
+const TEST_PROFILE: UserProfile = {
+  id: "00000000-0000-4000-8000-000000000001",
+  organization_id: "00000000-0000-4000-8000-000000000002",
+  email: "test@crashops.local",
+  full_name: "Crash Ops Test User",
+  role: "platform_admin",
+  is_active: true,
+};
+
+const TEST_ORGANIZATION: Organization = {
+  id: "00000000-0000-4000-8000-000000000002",
+  name: "Crash Ops Test Organization",
+  slug: "crash-ops-test",
+  address: null,
+  phone: null,
+  website: null,
+  timezone: "America/New_York",
+  is_active: true,
+};
+
 const UserContext = createContext<UserProfile | null>(null);
 const OrganizationContext = createContext<Organization | null>(null);
 const RoleContext = createContext<AppRole | null>(null);
@@ -42,13 +64,21 @@ const ContextStatus = createContext({ loading: false, error: "", needsSetup: fal
 
 export function ApplicationContextProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth();
-  const [profile, setProfile] = useState<UserProfile | null>(null);
-  const [organization, setOrganization] = useState<Organization | null>(null);
-  const [loading, setLoading] = useState(Boolean(user));
+  const [profile, setProfile] = useState<UserProfile | null>(TEST_MODE ? TEST_PROFILE : null);
+  const [organization, setOrganization] = useState<Organization | null>(TEST_MODE ? TEST_ORGANIZATION : null);
+  const [loading, setLoading] = useState(TEST_MODE ? false : Boolean(user));
   const [error, setError] = useState("");
   const [refreshKey, setRefreshKey] = useState(0);
 
   useEffect(() => {
+    if (TEST_MODE) {
+      setProfile(TEST_PROFILE);
+      setOrganization(TEST_ORGANIZATION);
+      setError("");
+      setLoading(false);
+      return;
+    }
+
     let active = true;
     setProfile(null);
     setOrganization(null);
@@ -93,7 +123,15 @@ export function ApplicationContextProvider({ children }: { children: ReactNode }
     };
   }, [refreshKey, user]);
 
-  const status = useMemo(() => ({ loading, error, needsSetup: Boolean(user && !loading && (!profile || !profile.organization_id)), refresh: () => setRefreshKey((value) => value + 1) }), [error, loading, profile, user]);
+  const status = useMemo(
+    () => ({
+      loading,
+      error,
+      needsSetup: TEST_MODE ? false : Boolean(user && !loading && (!profile || !profile.organization_id)),
+      refresh: () => setRefreshKey((value) => value + 1),
+    }),
+    [error, loading, profile, user],
+  );
 
   return (
     <ContextStatus.Provider value={status}>
