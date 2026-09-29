@@ -9,7 +9,8 @@ import {
 import { supabase } from "../lib/supabase";
 import { useAuth } from "./AuthProvider";
 
-const TEST_MODE = import.meta.env.VITE_TEST_MODE === "true";
+// This branch is isolated for Vercel testing only. Keep production/main Supabase-backed.
+const TEST_MODE = true;
 
 export type AppRole =
   | "platform_admin"
