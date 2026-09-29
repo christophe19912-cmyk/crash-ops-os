@@ -9,7 +9,8 @@ import {
 import type { Session, User } from "@supabase/supabase-js";
 import { supabase } from "../lib/supabase";
 
-const TEST_MODE = import.meta.env.VITE_TEST_MODE === "true";
+// This branch is isolated for Vercel testing only. Keep production/main Supabase-backed.
+const TEST_MODE = true;
 const TEST_USER = {
   id: "00000000-0000-4000-8000-000000000001",
   aud: "authenticated",
